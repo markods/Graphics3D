@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 14
+VisualStudioVersion = 14.0.25420.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Graphics3D", "Graphics3D.csproj", "{1A214247-A25C-487A-8564-792817218948}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MGL", "..\MGL\MGL.csproj", "{17BEA467-9F2E-4B34-941D-440ED98DBF73}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1A214247-A25C-487A-8564-792817218948}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A214247-A25C-487A-8564-792817218948}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A214247-A25C-487A-8564-792817218948}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A214247-A25C-487A-8564-792817218948}.Release|Any CPU.Build.0 = Release|Any CPU
+		{17BEA467-9F2E-4B34-941D-440ED98DBF73}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{17BEA467-9F2E-4B34-941D-440ED98DBF73}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{17BEA467-9F2E-4B34-941D-440ED98DBF73}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{17BEA467-9F2E-4B34-941D-440ED98DBF73}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

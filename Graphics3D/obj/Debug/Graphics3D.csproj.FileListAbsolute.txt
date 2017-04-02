@@ -1,0 +1,11 @@
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\bin\Debug\Graphics3D.exe.config
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\bin\Debug\Graphics3D.exe
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\bin\Debug\Graphics3D.pdb
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\obj\Debug\Graphics3D.csprojResolveAssemblyReference.cache
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\obj\Debug\Graphics3D.Properties.Resources.resources
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\obj\Debug\Graphics3D.csproj.GenerateResource.Cache
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\obj\Debug\Graphics3D.exe
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\obj\Debug\Graphics3D.pdb
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\obj\Debug\Graphics3D.Form.resources
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\bin\Debug\MGL.dll
+D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\Graphics3D\bin\Debug\MGL.pdb
