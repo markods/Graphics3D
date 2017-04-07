@@ -37,7 +37,7 @@ namespace MGL
 
 
       #region Getters
-      public Vector3D get_vertex(int index)
+      public Vector3D getv(int index)
       {
          if( index < 0 || index > ver_cnt )
             throw new ArgumentException("Index of vertex is not in set [3]");
@@ -48,12 +48,20 @@ namespace MGL
       #endregion
 
 
+      #region Matrix-Triangle operators
+      public static Triangle operator *(Matrix4D M, Triangle T)
+         => new Triangle(M * (Vector4D) T.getv(0),
+                         M * (Vector4D) T.getv(1),
+                         M * (Vector4D) T.getv(2), T.get_color());
+      #endregion
+
+
       #region Output
       public override string ToString()
-         => String.Format("\nVertex1: {0},\nVertex2: {1},\nVertex3: {2},\n{3}",
+         => String.Format("\n{0}, {1}, {2}; {3}",
                           vertex[0], vertex[1], vertex[2], color);
       public          string write_all()
-         => String.Format("\nVertex1: {0},\nVertex2: {1},\nVertex3: {2},\n{3}",
+         => String.Format("\n{0}, {1}, {2}; {3}",
                           vertex[0].write_all(), vertex[1].write_all(), vertex[2].write_all(), color);
       #endregion
       
@@ -77,11 +85,19 @@ namespace MGL
 
          Console.WriteLine("----------------");
 
-         Console.WriteLine("T.get_vertex(0) = {0}", T.get_vertex(0));
-         Console.WriteLine("T.get_vertex(1) = {0}", T.get_vertex(1));
-         Console.WriteLine("T.get_vertex(2) = {0}", T.get_vertex(2));
-         Console.WriteLine("T.get_color()   = {0}", T.get_color()  );
+         Console.WriteLine("T.getv(0) = {0}", T.getv(0));
+         Console.WriteLine("T.getv(1) = {0}", T.getv(1));
+         Console.WriteLine("T.getv(2) = {0}", T.getv(2));
+         Console.WriteLine("T.get_color() = {0}", T.get_color()  );
 
+
+         Console.WriteLine("----------------");
+
+         Matrix4D M = Matrix4D.scale(2, 3, 4);
+         Console.WriteLine("Triangle T = {0}", T);
+         Console.WriteLine("M = Matrix4D.scale(2, 3, 4) = {0}", M);
+
+         Console.WriteLine("M*T = {0}", M*T);
       }
       #endregion
 

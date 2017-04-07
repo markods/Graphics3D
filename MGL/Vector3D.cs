@@ -52,7 +52,7 @@ namespace MGL
 
 
       #region Casts
-      public static explicit operator Vector4D( Vector3D u ) => new Vector4D(u);
+      public static implicit operator Vector4D( Vector3D u ) => new Vector4D(u);
       #endregion
 
 

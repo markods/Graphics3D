@@ -88,9 +88,11 @@ namespace MGL
 
 
       #region Transformation matrices
-      public static Matrix4D roll ( double tx )   //counter-clockwise rotation about X-axis in radians
+      public static Matrix4D rotateX(double tx)   //roll  <=> counter-clockwise rotation about X-axis in radians
       {
-         if( Cmath.approx(tx, 0, Cmath.lop) )
+         tx = Cmath.frac_part(tx, 2*Cmath.PI);
+         
+         if( Cmath.approx(tx, 0, Cmath.mip) )
             return I;
          
          Matrix4D A = I;
@@ -108,9 +110,11 @@ namespace MGL
 
          return A;
       }
-      public static Matrix4D pitch( double ty )   //counter-clockwise rotation about Y-axis in radians
+      public static Matrix4D rotateY(double ty)   //pitch <=> counter-clockwise rotation about Y-axis in radians
       {
-         if( Cmath.approx(ty, 0, Cmath.lop) )
+         ty = Cmath.frac_part(ty, 2*Cmath.PI);
+         
+         if( Cmath.approx(ty, 0, Cmath.mip) )
             return I;
          
          Matrix4D A = I;
@@ -128,9 +132,11 @@ namespace MGL
 
          return A;
       }
-      public static Matrix4D yaw  ( double tz )   //counter-clockwise rotation about Z-axis in radians
+      public static Matrix4D rotateZ(double tz)   //yaw   <=> counter-clockwise rotation about Z-axis in radians
       {
-         if( Cmath.approx(tz, 0, Cmath.lop) )
+         tz = Cmath.frac_part(tz, 2*Cmath.PI);
+         
+         if( Cmath.approx(tz, 0, Cmath.mip) )
             return I;
          
          Matrix4D A = I;
@@ -150,16 +156,15 @@ namespace MGL
       }
       
 
-      public static Matrix4D rotate( double tx = 0, double ty = 0, double tz = 0 )   //roll + pitch + yaw in radians
+      public static Matrix4D rotate(double tx = 0, double ty = 0, double tz = 0)
       {
-         if( Cmath.approx(tx, 0, Cmath.lop)
-          && Cmath.approx(ty, 0, Cmath.lop)
-          && Cmath.approx(tz, 0, Cmath.lop) )
-            return I;
-         
-         return yaw(tz)*pitch(ty)*roll(tx);   //by standard
+         return rotateZ(tz)*rotateY(ty)*rotateX(tx);   //by convention
       }
-      public static Matrix4D scale ( double kx = 0, double ky = 0, double kz = 0 )
+      public static Matrix4D rotate(Vector3D rot)
+      {
+         return rotateZ(rot.getz())*rotateY(rot.gety())*rotateX(rot.getx());   //by convention
+      }
+      public static Matrix4D scale(double kx = 0, double ky = 0, double kz = 0)
       {
          Matrix4D A = I;
 
@@ -176,7 +181,24 @@ namespace MGL
 
          return A;
       }
-      public static Matrix4D transl( double lx = 0, double ly = 0, double lz = 0 )
+      public static Matrix4D scale(Vector3D v)
+      {
+         Matrix4D A = I;
+
+         //   X        Y        Z        W
+         //[  kx,      0,       0,       0  ]
+         //[  0,       ky,      0,       0  ]
+         //[  0,       0,       kz,      0  ]
+         //[  0,       0,       0,       1  ]
+
+         A.x[0,0] = v.getx();
+         A.x[1,1] = v.gety();
+         A.x[2,2] = v.getz();
+
+
+         return A;
+      }
+      public static Matrix4D transl(double lx = 0, double ly = 0, double lz = 0)
       {
          Matrix4D A = I;
          
@@ -194,9 +216,27 @@ namespace MGL
 
          return A;
       }
+      public static Matrix4D transl(Vector3D v)
+      {
+         Matrix4D A = I;
+         
+         //   X        Y        Z        W
+         //[  1,       0,       0,      lx  ]
+         //[  0,       1,       0,      ly  ]
+         //[  0,       0,       1,      lz  ]
+         //[  0,       0,       0,       1  ]
 
 
-      public static Matrix4D projectZ( double d )   //perspective projection matrix
+         A.x[0,3] = v.getx();
+         A.x[1,3] = v.gety();
+         A.x[2,3] = v.getz();
+
+
+         return A;
+      }
+
+
+      public static Matrix4D projectZ(double d)   //perspective projection matrix
       {
          if( Cmath.approx(d, 0) )
             throw new ArgumentException("Viewing plane cannot be singular");
@@ -236,9 +276,7 @@ namespace MGL
          //   / z
 
 
-         A.x[0,0] = 2*n/(r-l);
-         A.x[1,1] = ly;
-         A.x[2,3] = lz;
+         ...
 
 
          return A;
@@ -376,15 +414,18 @@ namespace MGL
 
          Console.WriteLine("----------------");
 
-         Matrix4D M31 = Matrix4D.roll (3);
-         Matrix4D M32 = Matrix4D.pitch(5);
-         Matrix4D M33 = Matrix4D.yaw  (7);
+         Matrix4D M31 = Matrix4D.rotateX(3);
+         Matrix4D M32 = Matrix4D.rotateY(5);
+         Matrix4D M33 = Matrix4D.rotateZ(7);
 
-         Matrix4D M3 = Matrix4D.rotate(3, 5, 7);
-         Matrix4D M4 = Matrix4D.transl(3, 5, 7);
-         Matrix4D M5 = Matrix4D.scale (3, 5, 7);
+         Matrix4D M41 = Matrix4D.rotate(3, 5, 7);
+         Matrix4D M42 = Matrix4D.rotate(new Vector3D(3, 5, 7));
+         Matrix4D M51 = Matrix4D.transl(3, 5, 7);
+         Matrix4D M52 = Matrix4D.transl(new Vector3D(3, 5, 7));
+         Matrix4D M61 = Matrix4D.scale (3, 5, 7);
+         Matrix4D M62 = Matrix4D.scale (new Vector3D(3, 5, 7));
 
-         Matrix4D M6 = Matrix4D.projectZ(5);
+         Matrix4D M7 = Matrix4D.projectZ(5);
 
 
 
@@ -395,12 +436,19 @@ namespace MGL
 
 
          Console.WriteLine();
-         Console.WriteLine("Matrix4D.rotate(3, 5, 7) = {0}", M3);
-         Console.WriteLine("Matrix4D.transl(3, 5, 7) = {0}", M4);
-         Console.WriteLine("Matrix4D.scale (3, 5, 7) = {0}", M5);
+         Console.WriteLine("Matrix4D.rotate(3, 5, 7) = {0}", M41);
+         Console.WriteLine("Matrix4D.rotate(new Vector3D(3, 5, 7)) = {0}", M42);
 
          Console.WriteLine();
-         Console.WriteLine("Matrix4D.projectZ(5) = {0}", M6);
+         Console.WriteLine("Matrix4D.transl(3, 5, 7) = {0}", M51);
+         Console.WriteLine("Matrix4D.transl(new Vector3D(3, 5, 7)) = {0}", M52);
+
+         Console.WriteLine();
+         Console.WriteLine("Matrix4D.scale (3, 5, 7) = {0}", M61);
+         Console.WriteLine("Matrix4D.scale (new Vector3D(3, 5, 7)) = {0}", M62);
+
+         Console.WriteLine();
+         Console.WriteLine("Matrix4D.projectZ(5) = {0}", M7);
 
       }
       #endregion

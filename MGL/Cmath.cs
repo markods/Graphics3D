@@ -458,7 +458,8 @@ namespace MGL
 
 
          Console.WriteLine();
-         if ( !same_dimm(a, b) )
+         Console.WriteLine("-----------------");
+         if( !same_dimm(a, b) )
          {
             Console.WriteLine("Dimenzije nizova a i b nisu jednake, respektivno");
          }
@@ -470,10 +471,6 @@ namespace MGL
             Console.WriteLine("a*2 = {0}", write( mult(a, 2)) );
             Console.WriteLine("a/2 = {0}", write( div (a, 2)) );
          }
-
-
-
-         Console.WriteLine("-----------------");
 
       }
       
@@ -498,6 +495,7 @@ namespace MGL
          Console.WriteLine("Cmath.cos(   -PI   ) = {0,3:G6}", Cmath.cos(   -PI   ));
          Console.WriteLine("Cmath.cos(   0.5   ) = {0,3:G6}", Cmath.cos(   0.5   ));
          Console.WriteLine("Math.Cos (   0.5   ) = {0,3:G6}", Math.Cos (   0.5   ));
+
       }
       #endregion
 

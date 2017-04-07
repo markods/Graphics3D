@@ -5,3 +5,10 @@ D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\MGL\obj\
 D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\MGL\obj\Debug\MGL.pdb
 D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\MGL\bin\Debug\Microsoft.VisualStudio.DebuggerVisualizers.dll
 D:\!!!\!Marko\Matematicka\iv. razred\!Skola 2016-2017\!Maturski\MarkoGL\MGL\bin\Debug\Microsoft.VisualStudio.DebuggerVisualizers.xml
+D:\!!!\!PROJEKTI\MarkoGL\MGL\bin\Debug\MGL.dll
+D:\!!!\!PROJEKTI\MarkoGL\MGL\bin\Debug\MGL.pdb
+D:\!!!\!PROJEKTI\MarkoGL\MGL\bin\Debug\Microsoft.VisualStudio.DebuggerVisualizers.dll
+D:\!!!\!PROJEKTI\MarkoGL\MGL\bin\Debug\Microsoft.VisualStudio.DebuggerVisualizers.xml
+D:\!!!\!PROJEKTI\MarkoGL\MGL\obj\Debug\MGL.csprojResolveAssemblyReference.cache
+D:\!!!\!PROJEKTI\MarkoGL\MGL\obj\Debug\MGL.dll
+D:\!!!\!PROJEKTI\MarkoGL\MGL\obj\Debug\MGL.pdb

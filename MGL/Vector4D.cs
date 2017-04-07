@@ -69,7 +69,7 @@ namespace MGL
 
 
       #region Casts
-      public static explicit operator Vector3D( Vector4D u ) => new Vector3D(u.x/u.w, u.y/u.w, u.z/u.w);
+      public static implicit operator Vector3D( Vector4D u ) => new Vector3D(u.x/u.w, u.y/u.w, u.z/u.w);
       #endregion
 
 
@@ -78,6 +78,10 @@ namespace MGL
       public double gety() => y;
       public double getz() => z;
       public double getw() => w;
+
+      public double getnormx() => x/w;
+      public double getnormy() => y/w;
+      public double getnormz() => z/w;
       #endregion
 
 
@@ -248,6 +252,9 @@ namespace MGL
          Console.WriteLine("v1.w = {0}", v1.getw());   //vrednost w koordinate
 
          Console.WriteLine();
+         Console.WriteLine("v1.normx = {0}", v1.getnormx());   //vrednost normalizovane x koordinate
+         Console.WriteLine("v1.normy = {0}", v1.getnormy());   //vrednost normalizovane y koordinate
+         Console.WriteLine("v1.normz = {0}", v1.getnormz());   //vrednost normalizovane z koordinate
          Console.WriteLine("Vector4D.normalize(v1) = {0}", Vector4D.normalize(v1));   //vracanje novog vektora kao normalizovan pocetni
          v1.normalize();
          Console.WriteLine("v1.normalize()         = {0}", v1);                       //normalizacija pocetnog vektora
