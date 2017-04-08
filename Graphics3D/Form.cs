@@ -47,6 +47,8 @@ namespace Graphics3D
 
 
          //citace se verovatno iz fajla   //------------------------------!!!!!!!!!!!!!!!!!!!!!!!
+         Shape s = Shape.quboid(50, 20, 30, Color.Red);
+         /*
          Vector3D v11 = new Vector3D(20, 50, 0);
          Vector3D v12 = new Vector3D(0, 50, 0);
          Vector3D v13 = new Vector3D(20, 50, 70);
@@ -69,7 +71,7 @@ namespace Graphics3D
          s.add(t1);
          s.add(t2);
          s.add(t3);
-
+         */
 
          scene.Add(s);
          triangles = new List<Triangle>();
@@ -163,7 +165,7 @@ namespace Graphics3D
 
 
          //transformaciona matrica za rotaciju test trougla oko z ose (counter-clockwise)
-         Matrix4D R1 = Matrix4D.rotateZ( yaw );  
+         Matrix4D R1 = Matrix4D.rotateZ( yaw );
 
          //transformacija test trougla rotacijom oko z ose
          Vector4D a2 = R1 * a1;

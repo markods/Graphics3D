@@ -45,10 +45,17 @@ namespace MGL
          return new Vector3D(vertex[index]);
       }
       public Color get_color() => color;
+      public Vector3D get_center() => (vertex[0] + vertex[1] + vertex[2]) / 3;
       #endregion
 
 
-      #region Matrix-Triangle operators
+      #region Setters
+      public void set_color(Color _color)
+      { color = _color; }
+      #endregion
+
+
+      #region Triangle operators
       public static Triangle operator *(Matrix4D M, Triangle T)
          => new Triangle(M * (Vector4D) T.getv(0),
                          M * (Vector4D) T.getv(1),
