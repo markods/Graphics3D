@@ -38,73 +38,87 @@ namespace MGL
 
 
       #region Common 2D shapes
-      /*
-      public static Shape rectangle(double ax, double az)   //x-length, z-width
+      public static Shape rectangle(double ax, double az, Color c, int level = 1)   //ax - length, az - width; triangles = 2 * 2^level * 2^level
       {
          if( ax <= 0 || az <= 0 )
             throw new ArgumentException("Both dimensions of rectangle must be greater than zero");
+         if( level <= 0 )
+            throw new ArgumentException("Level of refinement must be greater than zero");
          
          Shape S = new Shape();
-         
+
+         Vector3D A, B, C, D;
+         int edges = (int) Math.Pow(2, level);
+
+         double lenx = ax / edges;
+         double lenz = az / edges;
+
+
+         for( int i = 0; i < edges; i++ )
+            for( int j = 0; j < edges; j++ )
+            {
+               A = new Vector3D(-ax/2 +  j    * lenx,   0,   -az/2 + (i+1) * lenz );
+               B = new Vector3D(-ax/2 + (j+1) * lenx,   0,   -az/2 + (i+1) * lenz );
+               C = new Vector3D(-ax/2 + (j+1) * lenx,   0,   -az/2 +  i    * lenz );
+               D = new Vector3D(-ax/2 +  j    * lenx,   0,   -az/2 +  i    * lenz );
+
+               //A-B-C-D
+               S.add(new Triangle(A, B, C, c));
+               S.add(new Triangle(A, C, D, c));
+            }
 
 
          return S;
       }
-      public static Shape circle(double r)
+      public static Shape circle   (double r,             Color c, int level = 6)   //r - radius; triangles = 3 * 2^level
       {
-         return ;
+         if( r <= 0 )
+            throw new ArgumentException("Radius of circle must be greater than zero");
+         if( level <= 0 )
+            throw new ArgumentException("Level of refinement must be greater than zero");
+         
+         Shape S = new Shape();
+         
+         int    edges = (int) (3 * Math.Pow(2, level));
+         double angle = 2*Cmath.PI / edges;
+
+
+         for( int i = 0; i < edges; i++ )
+            S.add( new Triangle(Matrix4D.rotateY( angle*i     ) * Vector4D.i,
+                                Matrix4D.rotateY( angle*(i+1) ) * Vector4D.i,
+                                Vector3D.zero, c) );
+
+
+         return S;
       }
-      */
       #endregion
 
 
       #region Common 3D shapes
-      public static Shape quboid(double ax, double az, double ay, Color c)   //x-length, z-width, y-height
+      public static Shape quboid(double ax, double az, double ay, Color c, int level = 1)   //ax - length, az - width, ay - height, triangles = 6*2 * 2^level * 2^level
       {
          if( ax <= 0 || az <= 0 || ay <= 0 )
             throw new ArgumentException("All three dimensions of quboid must be greater than zero");
-
+         
          Shape S = new Shape();
 
-         Vector3D A = new Vector3D(-ax/2, -ay/2,  az/2 );
-         Vector3D B = new Vector3D( ax/2, -ay/2,  az/2 );
-         Vector3D C = new Vector3D( ax/2, -ay/2, -az/2 );
-         Vector3D D = new Vector3D(-ax/2, -ay/2, -az/2 );
+         double PI = Cmath.PI;
 
-         Vector3D E = new Vector3D(-ax/2,  ay/2,  az/2 );
-         Vector3D F = new Vector3D( ax/2,  ay/2,  az/2 );
-         Vector3D G = new Vector3D( ax/2,  ay/2, -az/2 );
-         Vector3D H = new Vector3D(-ax/2,  ay/2, -az/2 );
+         //vektori nomale ovih pravougaonika su u smeru trece ose (koja nije navedena u imenu) i sa centrom u koordinatnom pocetku
+         Shape rect_xz =                          rectangle(ax, az, c);
+         Shape rect_xy = Matrix4D.rotateX(PI/2) * rectangle(ax, ay, c);
+         Shape rect_zy = Matrix4D.rotateZ(PI/2) * rectangle(ay, az, c);
 
+         //NAPOMENA - svi trouglovi su orijentisani counter-clockwise, vektori normale su ka spoljasnosti kocke
 
+         S.add( (Matrix4D.transl(0,  ay/2, 0)                       ) * rect_xz );   //E-F-G-H
+         S.add( (Matrix4D.transl(0, -ay/2, 0) * Matrix4D.rotateX(PI)) * rect_xz );   //A-B-C-D
 
-         //NAPOMENA - svi trouglovi su orijentisani counter-clockwise
+         S.add( (Matrix4D.transl(0, 0,  az/2)                       ) * rect_xy );   //A-B-F-E
+         S.add( (Matrix4D.transl(0, 0, -az/2) * Matrix4D.rotateY(PI)) * rect_xy );   //C-D-H-G
 
-         //A-B-C-D
-         S.add(new Triangle(A, B, C, c));
-         S.add(new Triangle(A, C, D, c));
-
-         //E-F-G-H
-         S.add(new Triangle(E, F, G, c));
-         S.add(new Triangle(E, G, H, c));
-
-
-         //A-B-F-E
-         S.add(new Triangle(A, B, E, c));
-         S.add(new Triangle(B, F, E, c));
-
-         //C-D-H-G
-         S.add(new Triangle(C, D, G, c));
-         S.add(new Triangle(D, H, G, c));
-
-
-         //B-C-G-F
-         S.add(new Triangle(B, C, G, c));
-         S.add(new Triangle(B, G, F, c));
-
-         //D-A-E-H
-         S.add(new Triangle(D, A, H, c));
-         S.add(new Triangle(A, E, H, c));
+         S.add( (Matrix4D.transl( ax/2, 0, 0)                       ) * rect_zy );   //B-C-G-F
+         S.add( (Matrix4D.transl(-ax/2, 0, 0) * Matrix4D.rotateY(PI)) * rect_zy );   //D-A-E-H
 
 
 
