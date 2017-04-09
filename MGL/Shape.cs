@@ -38,12 +38,12 @@ namespace MGL
 
 
       #region Common 2D shapes
-      public static Shape rectangle(double ax, double az, Color c, int level = 1)   //ax - length, az - width; triangles = 2 * 2^level * 2^level
+      public static Shape rectangle(double ax, double az, Color c, int level = 0)   //ax - length, az - width; triangles = 2 * 2^level * 2^level
       {
          if( ax <= 0 || az <= 0 )
             throw new ArgumentException("Both dimensions of rectangle must be greater than zero");
-         if( level <= 0 )
-            throw new ArgumentException("Level of refinement must be greater than zero");
+         if( level < 0 )
+            throw new ArgumentException("Level of refinement must be non-negative");
          
          Shape S = new Shape();
 
@@ -74,8 +74,8 @@ namespace MGL
       {
          if( r <= 0 )
             throw new ArgumentException("Radius of circle must be greater than zero");
-         if( level <= 0 )
-            throw new ArgumentException("Level of refinement must be greater than zero");
+         if( level < 0 )
+            throw new ArgumentException("Level of refinement must be non-negative");
          
          Shape S = new Shape();
          
@@ -95,10 +95,12 @@ namespace MGL
 
 
       #region Common 3D shapes
-      public static Shape quboid(double ax, double az, double ay, Color c, int level = 1)   //ax - length, az - width, ay - height, triangles = 6*2 * 2^level * 2^level
+      public static Shape quboid(double ax, double az, double ay, Color c, int level = 0)   //ax - length, az - width, ay - height, triangles = 6*2 * 2^level * 2^level
       {
          if( ax <= 0 || az <= 0 || ay <= 0 )
             throw new ArgumentException("All three dimensions of quboid must be greater than zero");
+         if( level < 0 )
+            throw new ArgumentException("Level of refinement must be non-negative");
          
          Shape S = new Shape();
 
@@ -161,7 +163,7 @@ namespace MGL
 
       #region Shape operators
       public static Shape operator *(Matrix4D M, Shape S)
-         => new Shape( S.get_triangles().ConvertAll(Triangle => new Triangle(M * Triangle)) );
+         => new Shape( S.get_triangles().ConvertAll(Triangle => new Triangle(M * S.transf * Triangle)) );
       #endregion
 
 
