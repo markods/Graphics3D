@@ -9,7 +9,15 @@ namespace MGL
       public const int mip = 4;   //number of medium precision             -||-
       public const int lop = 2;   //number of low    precision             -||-
 
-      public const double PI = Math.PI;
+      public const  double PI = Math.PI;
+      public static double sqrt2
+      {
+         get { return Math.Sqrt(2); }
+      }
+      public static double sqrt3
+      {
+         get { return Math.Sqrt(3); }
+      }
 
 
       #region Number representation
@@ -268,44 +276,64 @@ namespace MGL
 
 
       #region Trigonometric functions
-      //funkcija koja vraca sin argumenta, sa zaokrugljivanjem za lepe argumente (npr. 0, pi/2, ...)
-      public static double sin(double x)   //u radijanima
+      //funkcija koja vraca sin(argumenta) (zaokrugljen na ulp), tj. sledece vrednosti ako su dovoljno blizu (mip): { 0, +1, -1, +0.5, -0.5 }
+      public static double sin   (double x)   //u radijanima
       {
-         double sinx = Math.Sin(x);
+         double sinx = signif_round(Math.Sin(x), ulp);
 
-         if( approx(sinx, 0, mip) )   sinx = 0;
-         else if( sinx >= 0 )
-         {
-            if     ( approx(sinx,  1,   mip) )   sinx =  1;
-            else if( approx(sinx,  0.5, mip) )   sinx =  0.5;
-         }
-         else if( sinx < 0 )
-         {
-            if     ( approx(sinx, -1,   mip) )   sinx = -1;
-            else if( approx(sinx, -0.5, mip) )   sinx = -0.5;
-         }
-         
+         if     (          approx(sinx,  0,   mip) )   sinx =  0;
+         else if( x > 0 && approx(sinx,  1,   mip) )   sinx =  1;
+         else if( x < 0 && approx(sinx, -1,   mip) )   sinx = -1;
+         else if( x > 0 && approx(sinx,  0.5, mip) )   sinx =  0.5;
+         else if( x < 0 && approx(sinx, -0.5, mip) )   sinx = -0.5;
+
          return sinx;
       }
 
-      //funkcija koja vraca cos argumenta, sa zaokrugljivanjem za lepe argumente (npr. 0, pi/2, ...)
-      public static double cos(double x)   //u radijanima
+      //funkcija koja vraca cos(argumenta) (zaokrugljen na ulp), tj. sledece vrednosti ako su dovoljno blizu (mip): { 0, +1, -1, +0.5, -0.5 }
+      public static double cos   (double x)   //u radijanima
       {
-         double cosx = Math.Cos(x);
+         double cosx = signif_round(Math.Cos(x), ulp);
 
-         if( approx(cosx, 0, mip) )   cosx = 0;
-         else if( cosx >= 0 )
-         {
-            if     ( approx(cosx,  1,   mip) )   cosx =  1;
-            else if( approx(cosx,  0.5, mip) )   cosx =  0.5;
-         }
-         else if( cosx < 0 )
-         {
-            if     ( approx(cosx, -1,   mip) )   cosx = -1;
-            else if( approx(cosx, -0.5, mip) )   cosx = -0.5;
-         }
+
+         if     (          approx(cosx,  0,   mip) )   cosx =  0;
+         else if( x > 0 && approx(cosx,  1,   mip) )   cosx =  1;
+         else if( x < 0 && approx(cosx, -1,   mip) )   cosx = -1;
+         else if( x > 0 && approx(cosx,  0.5, mip) )   cosx =  0.5;
+         else if( x < 0 && approx(cosx, -0.5, mip) )   cosx = -0.5;
+
 
          return cosx;
+      }
+
+      //funkcija koja vraca arcsin(argumenta) (zaokrugljen na ulp), tj. sledece vrednosti ako su dovoljno blizu (mip): { 0, pi/2, -pi/2 }
+      public static double arcsin(double x)   //bez jedinice
+      {
+         if( x < -1 || x > 1 )
+            throw new ArgumentException("Arcsin can only be calculated for x in [-1, 1]");
+         
+         double arcsinx = signif_round(Math.Asin(x), ulp);
+
+         if     (          approx(arcsinx,  0,    mip) )   arcsinx = 0;
+         else if( x > 0 && approx(arcsinx,  PI/2, mip) )   arcsinx = signif_round( PI/2, ulp);
+         else if( x < 0 && approx(arcsinx, -PI/2, mip) )   arcsinx = signif_round(-PI/2, ulp);
+
+         return arcsinx;
+      }
+
+      //funkcija koja vraca arccos(argumenta) (zaokrugljen na ulp), tj. sledece vrednosti ako su dovoljno blizu (mip): { 0, pi/2,  pi   }
+      public static double arccos(double x)   //bez jedinice
+      {
+         if( x < -1 || x > 1 )
+            throw new ArgumentException("Arccos can only be calculated for x in [-1, 1]");
+         
+         double arccosx = signif_round(Math.Acos(x), ulp);
+
+         if     (          approx(arccosx,  0,    mip) )   arccosx = 0;
+         else if( x > 0 && approx(arccosx,  PI/2, mip) )   arccosx = signif_round(PI/2, ulp);
+         else if( x < 0 && approx(arccosx,  PI,   mip) )   arccosx = signif_round(PI,   ulp);
+
+         return arccosx;
       }
       #endregion
 
@@ -478,23 +506,64 @@ namespace MGL
       {
          Console.WriteLine("----------------- <<<<<<<< Cmath test 3");
 
-         Console.WriteLine("Cmath.sin(    0    ) = {0,3:G6}", Cmath.sin(    0    ));
          Console.WriteLine("Cmath.sin(  PI / 2 ) = {0,3:G6}", Cmath.sin(  PI / 2 ));
+         Console.WriteLine("Cmath.sin(  PI / 6 ) = {0,3:G6}", Cmath.sin(  PI / 6 ));
+         Console.WriteLine("Cmath.sin(    0    ) = {0,3:G6}", Cmath.sin(    0    ));
+         Console.WriteLine("Cmath.sin( -PI / 6 ) = {0,3:G6}", Cmath.sin( -PI / 6 ));
          Console.WriteLine("Cmath.sin( -PI / 2 ) = {0,3:G6}", Cmath.sin( -PI / 2 ));
-         Console.WriteLine("Cmath.sin(    PI   ) = {0,3:G6}", Cmath.sin(    PI   ));
-         Console.WriteLine("Cmath.sin(   -PI   ) = {0,3:G6}", Cmath.sin(   -PI   ));
-         Console.WriteLine("Cmath.sin(   0.5   ) = {0,3:G6}", Cmath.sin(   0.5   ));
-         Console.WriteLine("Math.Sin (   0.5   ) = {0,3:G6}", Math.Sin (   0.5   ));
+
+         Console.WriteLine();
+         Console.WriteLine("Cmath.sin(      PI     ) = {0,3}", Cmath.sin(      PI     ));
+         Console.WriteLine(" Math.Sin(      PI     ) = {0,3}",  Math.Sin(      PI     ));
+         Console.WriteLine("Cmath.sin(      15     ) = {0,3}", Cmath.sin(      15     ));
+         Console.WriteLine(" Math.Sin(      15     ) = {0,3}",  Math.Sin(      15     ));
+
+
+
 
          Console.WriteLine("-----------------");
 
-         Console.WriteLine("Cmath.cos(    0    ) = {0,3:G6}", Cmath.cos(    0    ));
-         Console.WriteLine("Cmath.cos(  PI / 2 ) = {0,3:G6}", Cmath.cos(  PI / 2 ));
-         Console.WriteLine("Cmath.cos( -PI / 2 ) = {0,3:G6}", Cmath.cos( -PI / 2 ));
-         Console.WriteLine("Cmath.cos(    PI   ) = {0,3:G6}", Cmath.cos(    PI   ));
-         Console.WriteLine("Cmath.cos(   -PI   ) = {0,3:G6}", Cmath.cos(   -PI   ));
-         Console.WriteLine("Cmath.cos(   0.5   ) = {0,3:G6}", Cmath.cos(   0.5   ));
-         Console.WriteLine("Math.Cos (   0.5   ) = {0,3:G6}", Math.Cos (   0.5   ));
+         Console.WriteLine("Cmath.cos(    0    ) = {0,3}", Cmath.cos(    0    ));
+         Console.WriteLine("Cmath.cos(  PI / 3 ) = {0,3}", Cmath.cos(  PI / 3 ));
+         Console.WriteLine("Cmath.cos(  PI / 2 ) = {0,3}", Cmath.cos(  PI / 2 ));
+         Console.WriteLine("Cmath.cos(2*PI / 3 ) = {0,3}", Cmath.cos(2*PI / 3 ));
+         Console.WriteLine("Cmath.cos(    PI   ) = {0,3}", Cmath.cos(    PI   ));
+
+         Console.WriteLine();
+         Console.WriteLine("Cmath.cos(PI - 0.000001) = {0,3}", Cmath.cos(PI - 0.000001));
+         Console.WriteLine(" Math.Cos(PI - 0.000001) = {0,3}",  Math.Cos(PI - 0.000001));
+         Console.WriteLine("Cmath.cos(      15     ) = {0,3}", Cmath.cos(      15     ));
+         Console.WriteLine(" Math.Cos(      15     ) = {0,3}",  Math.Cos(      15     ));
+
+
+
+
+         Console.WriteLine("-----------------");
+
+         Console.WriteLine("Cmath.arcsin(    0    ) = {0,3}", Cmath.arcsin(    0    ));
+         Console.WriteLine("Cmath.arcsin(    1    ) = {0,3}", Cmath.arcsin(    1    ));
+         Console.WriteLine("Cmath.arcsin(   -1    ) = {0,3}", Cmath.arcsin(   -1    ));
+
+         Console.WriteLine();
+         Console.WriteLine("Cmath.arcsin( 0.00001 ) = {0,3}", Cmath.arcsin( 0.00001 ));
+         Console.WriteLine(" Math.Asin  ( 0.00001 ) = {0,3}",  Math.Asin  ( 0.00001 ));
+         Console.WriteLine("Cmath.arcsin(   0.7   ) = {0,3}", Cmath.arcsin(   0.7   ));
+         Console.WriteLine(" Math.Asin  (   0.7   ) = {0,3}",  Math.Asin  (   0.7   ));
+
+
+
+
+         Console.WriteLine("-----------------");
+
+         Console.WriteLine("Cmath.arccos(    0    ) = {0,3}", Cmath.arccos(    0    ));
+         Console.WriteLine("Cmath.arccos(    1    ) = {0,3}", Cmath.arccos(    1    ));
+         Console.WriteLine("Cmath.arccos(   -1    ) = {0,3}", Cmath.arccos(   -1    ));
+
+         Console.WriteLine();
+         Console.WriteLine("Cmath.arcsin( 0.00001 ) = {0,3}", Cmath.arcsin( 0.00001 ));
+         Console.WriteLine(" Math.Asin  ( 0.00001 ) = {0,3}",  Math.Asin  ( 0.00001 ));
+         Console.WriteLine("Cmath.arccos(   0.7   ) = {0,3}", Cmath.arccos(   0.7   ));
+         Console.WriteLine(" Math.Acos  (   0.7   ) = {0,3}",  Math.Acos  (   0.7   ));
 
       }
       #endregion

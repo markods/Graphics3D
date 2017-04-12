@@ -57,7 +57,7 @@ namespace Graphics3D
 
 
          //citace se verovatno iz fajla   //------------------------------!!!!!!!!!!!!!!!!!!!!!!!
-         quboid = Shape.quboid( 100, 100, 100, Color.Green,  5);
+         quboid = Shape.quboid( 100, 100, 100, Color.Green, 6 );
          circle = Shape.circle( 50,            Color.Red,   16);
 
 

@@ -162,7 +162,7 @@ namespace MGL
       }
       public static Matrix4D rotate(Vector3D rot)
       {
-         return rotateZ(rot.getz())*rotateY(rot.gety())*rotateX(rot.getx());   //by convention
+         return rotateZ(rot.getz())*rotateY(rot.gety())*rotateX(rot.getx());   //by convention   //---------------------------------- !!!!!!!!!!! ne valja
       }
       public static Matrix4D scale(double kx = 0, double ky = 0, double kz = 0)
       {

@@ -38,6 +38,9 @@ namespace MGL
 
 
       #region Common 2D shapes
+      /*
+      public static Shape equitriangle(double a, int level = 1)   //a - side length; triangles = level^2 (= 1 + 3 + 5 + ... + level)
+      */
       public static Shape rectangle(double ax, double az, Color c, int level = 1)   //ax - length, az - width; triangles = 2 * level^2
       {
          if( ax <= 0 || az <= 0 )
@@ -128,9 +131,25 @@ namespace MGL
       /*
       public static Shape tetrahedron(double a)
       {
+         
+         
          return ;
       }
-      public static Shape sphere(double r)
+      public static Shape tetrahedron(double a)
+      {
+         
+         
+         return ;
+      }
+      public static Shape sphere(double r, int level = 1)
+      {
+         return ;
+      }
+      public static Shape uvsphere(double r, int level = 1)
+      {
+         return ;
+      }
+      public static Shape icosphere(double r, int level = 1)
       {
          return ;
       }
