@@ -8,7 +8,7 @@ namespace MGL
       private Vector3D[] vertex;
       private Color color;
 
-      private const int ver_cnt = 3;
+      public const int ver_cnt = 3;
 
 
       #region Constructors

@@ -38,17 +38,17 @@ namespace MGL
 
 
       #region Common 2D shapes
-      public static Shape rectangle(double ax, double az, Color c, int level = 0)   //ax - length, az - width; triangles = 2 * 2^level * 2^level
+      public static Shape rectangle(double ax, double az, Color c, int level = 1)   //ax - length, az - width; triangles = 2 * level^2
       {
          if( ax <= 0 || az <= 0 )
             throw new ArgumentException("Both dimensions of rectangle must be greater than zero");
-         if( level < 0 )
-            throw new ArgumentException("Level of refinement must be non-negative");
+         if( level <= 0 )
+            throw new ArgumentException("Level of refinement must be positive");
          
          Shape S = new Shape();
 
          Vector3D A, B, C, D;
-         int edges = (int) Math.Pow(2, level);
+         int edges = level;   //number of sub-rectangle edges on rectangle edge
 
          double lenx = ax / edges;
          double lenz = az / edges;
@@ -70,24 +70,23 @@ namespace MGL
 
          return S;
       }
-      public static Shape circle   (double r,             Color c, int level = 6)   //r - radius; triangles = 3 * 2^level
+      public static Shape circle   (double r,             Color c, int level = 4)   //r - radius; triangles = 3 * level
       {
          if( r <= 0 )
             throw new ArgumentException("Radius of circle must be greater than zero");
-         if( level < 0 )
-            throw new ArgumentException("Level of refinement must be non-negative");
+         if( level <= 0 )
+            throw new ArgumentException("Level of refinement must be positive");
          
          Shape S = new Shape();
          
-         int    edges = (int) (3 * Math.Pow(2, level));
+         int    edges = 3 * level;   //number of edges that approximate the circle
          double angle = 2*Cmath.PI / edges;
 
 
          for( int i = 0; i < edges; i++ )
-            S.add( new Triangle(Matrix4D.rotateY( angle*i     ) * Vector4D.i,
-                                Matrix4D.rotateY( angle*(i+1) ) * Vector4D.i,
-                                Vector3D.zero, c) );
-
+            S.add( new Triangle( Matrix4D.rotateY( angle*i     ) * (r * Vector4D.i),   //Matrix4D mnozenje sa skalarom mnozi i w komponentu (donje desno polje matrice) sto ne treba da se desava
+                                 Matrix4D.rotateY( angle*(i+1) ) * (r * Vector4D.i),
+                                 Vector3D.zero, c) );
 
          return S;
       }
@@ -95,21 +94,21 @@ namespace MGL
 
 
       #region Common 3D shapes
-      public static Shape quboid(double ax, double az, double ay, Color c, int level = 0)   //ax - length, az - width, ay - height, triangles = 6*2 * 2^level * 2^level
+      public static Shape quboid(double ax, double az, double ay, Color c, int level = 1)   //ax - length, az - width, ay - height; triangles = 6 * 2 * leveľ^2
       {
          if( ax <= 0 || az <= 0 || ay <= 0 )
             throw new ArgumentException("All three dimensions of quboid must be greater than zero");
-         if( level < 0 )
-            throw new ArgumentException("Level of refinement must be non-negative");
+         if( level <= 0 )
+            throw new ArgumentException("Level of refinement must be positive");
          
          Shape S = new Shape();
 
          double PI = Cmath.PI;
 
          //vektori nomale ovih pravougaonika su u smeru trece ose (koja nije navedena u imenu) i sa centrom u koordinatnom pocetku
-         Shape rect_xz =                          rectangle(ax, az, c);
-         Shape rect_xy = Matrix4D.rotateX(PI/2) * rectangle(ax, ay, c);
-         Shape rect_zy = Matrix4D.rotateZ(PI/2) * rectangle(ay, az, c);
+         Shape rect_xz =                          rectangle(ax, az, c, level);
+         Shape rect_xy = Matrix4D.rotateX(PI/2) * rectangle(ax, ay, c, level);
+         Shape rect_zy = Matrix4D.rotateZ(PI/2) * rectangle(ay, az, c, level);
 
          //NAPOMENA - svi trouglovi su orijentisani counter-clockwise, vektori normale su ka spoljasnosti kocke
 
@@ -148,7 +147,8 @@ namespace MGL
 
 
       #region Getters
-      public List<Triangle> get_triangles() => triangles.ConvertAll( Triangle => new Triangle(Triangle) );
+      public List<Triangle> get_triangles()    => triangles.ConvertAll( Triangle => new Triangle(Triangle) );
+      public int            get_triangle_num() => triangles.Count;
       public Matrix4D get_transf() => new Matrix4D(transf);
       public Vector3D get_center()
       {
