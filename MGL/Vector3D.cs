@@ -52,7 +52,7 @@ namespace MGL
 
 
       #region Casts
-      public static implicit operator Vector4D( Vector3D u ) => new Vector4D(u);
+      public static explicit operator Vector4D( Vector3D u ) => new Vector4D(u);
       #endregion
 
 
@@ -112,19 +112,21 @@ namespace MGL
 
       public static Vector3D vect_mult(Vector3D u, Vector3D v)
             => new Vector3D( (u.y*v.z - v.y*u.z), -(u.x*v.z - v.x*u.z), (u.x*v.y - v.x*u.y) );
-      
+
       //|i    j    k  |
       //|u.x  u.y  u.z|
       //|v.x  v.y  v.z|
-
       #endregion
-      
+
 
       #region Vector properties
-      public        double len()              => Math.Sqrt(x*x     + y*y     + z*z    );   //vraca duzinu vektora
-      public static double len(Vector3D u)    => Math.Sqrt(u.x*u.x + u.y*u.y + u.z*u.z);   //      -||-
-      public        double len_sq()           => x*x     + y*y     + z*z;       //vraca kvadrat duzine vektora
-      public static double len_sq(Vector3D u) => u.x*u.x + u.y*u.y + u.z*u.z;   //             -||-
+      public static double angleXY(Vector3D u) => Cmath.arcsin(k*u / u.len());   //ugao koji vektor zaklapa sa XY-ravni, u matematickom smeru
+      public static double angleXZ(Vector3D u) => Cmath.arcsin(j*u / u.len());   //ugao koji vektor zaklapa sa XZ-ravni, u matematickom smeru
+      public static double angleYZ(Vector3D u) => Cmath.arcsin(i*u / u.len());   //ugao koji vektor zaklapa sa YZ-ravni, u matematickom smeru
+
+
+      public double len()      => Math.Sqrt(x*x + y*y + z*z);   //vraca duzinu vektora
+      public double len_sq()   =>          (x*x + y*y + z*z);   //vraca kvadrat duzine vektora
       #endregion
 
 
@@ -173,12 +175,13 @@ namespace MGL
          Console.WriteLine("v1.z = {0}", v1.getz());   //vrednost z koordinate
 
          Console.WriteLine();
-         Console.WriteLine("v1.len()            = {0,3:G4}", v1.len()        );   //duzina vektora
-         Console.WriteLine("Vector3D.len(v1)    = {0,3:G4}", Vector3D.len(v1));   //staticki pozvana duzina vektora
+         Console.WriteLine("angleXY(v1) = {0}", angleXY(v1));   //ugao vektora sa XY-ravni
+         Console.WriteLine("angleXZ(v1) = {0}", angleXZ(v1));   //ugao vektora sa XZ-ravni
+         Console.WriteLine("angleYZ(v1) = {0}", angleYZ(v1));   //ugao vektora sa YZ-ravni
 
          Console.WriteLine();
-         Console.WriteLine("v1.len_sq()         = {0}", v1.len_sq()        );   //kvadrat duzine vektora
-         Console.WriteLine("Vector3D.len_sq(v1) = {0}", Vector3D.len_sq(v1));   //staticki pozvan kvadrat duzine vektora
+         Console.WriteLine("v1.len()    = {0,3:G4}", v1.len()        );   //duzina vektora
+         Console.WriteLine("v1.len_sq() = {0}",      v1.len_sq()     );   //kvadrat duzine vektora
 
 
 

@@ -156,15 +156,13 @@ namespace MGL
       //|u.x  u.y  u.z|      jer se implicitno desava sledece:
       //|v.x  v.y  v.z|   1. vektorski se mnoze norm. (w = 1) vektori u i v,
       //                  2. dobijeni vektor se mnozi sa koef. u.w i v.w
+
+
       #endregion
 
 
       #region Vector properties
-      public static Vector4D scale_to (Vector4D u, double _w) => new Vector4D(u.x * _w/u.w,   u.y * _w/u.w,   u.z * _w/u.w,   _w   );
-      public static Vector4D scale_by (Vector4D u, double k ) => new Vector4D(u.x * k,        u.y * k,        u.z * k,        u.w*k);
-      public static Vector4D normalize(Vector4D u)            => new Vector4D(u.x / u.w,      u.y / u.w,      u.z / u.w            );
-
-      public void scale_to(double _w)
+      public Vector3D scale_to(double _w)
       {
          if( _w == 0 )
             throw new ArgumentException("New scale base w must be non-zero");
@@ -173,8 +171,10 @@ namespace MGL
          y *= _w/w;
          z *= _w/w;
          w  = _w;
+
+         return this;
       }
-      public void scale_by(double k)
+      public Vector3D scale_by(double k)
       {
          if( k == 0 )
             throw new ArgumentException("Scale factor must be non-zero");
@@ -183,20 +183,27 @@ namespace MGL
          y *= k;
          z *= k;
          w *= k;
+
+         return this;
       }
-      public void normalize()
+      public Vector3D norm()
       {
          x /= w;
          y /= w;
          z /= w;
          w  = 1;
+
+         return this;
       }
 
 
-      public        double len()              => Math.Sqrt(x*x     + y*y     + z*z    ) / w;     //vraca duzinu vektora
-      public static double len(Vector4D u)    => Math.Sqrt(u.x*u.x + u.y*u.y + u.z*u.z) / u.w;   //       -||-
-      public        double len_sq()           => (x*x     + y*y     + z*z    ) / (w*w    );   //vraca kvadrat duzine vektora
-      public static double len_sq(Vector4D u) => (u.x*u.x + u.y*u.y + u.z*u.z) / (u.w*u.w);   //          -||-
+      public static double angleXY(Vector3D u) => Cmath.arcsin(k*u / u.len());   //ugao koji vektor zaklapa sa XY-ravni, u matematickom smeru
+      public static double angleXZ(Vector3D u) => Cmath.arcsin(j*u / u.len());   //ugao koji vektor zaklapa sa XZ-ravni, u matematickom smeru
+      public static double angleYZ(Vector3D u) => Cmath.arcsin(i*u / u.len());   //ugao koji vektor zaklapa sa YZ-ravni, u matematickom smeru
+
+
+      public double len()      => Math.Sqrt(x*x + y*y + z*z) /  w;      //vraca duzinu vektora
+      public double len_sq()   =>          (x*x + y*y + z*z) / (w*w);   //vraca kvadrat duzine vektora
       #endregion
 
 
@@ -255,28 +262,20 @@ namespace MGL
          Console.WriteLine("v1.normx = {0}", v1.getnormx());   //vrednost normalizovane x koordinate
          Console.WriteLine("v1.normy = {0}", v1.getnormy());   //vrednost normalizovane y koordinate
          Console.WriteLine("v1.normz = {0}", v1.getnormz());   //vrednost normalizovane z koordinate
-         Console.WriteLine("Vector4D.normalize(v1) = {0}", Vector4D.normalize(v1));   //vracanje novog vektora kao normalizovan pocetni
-         v1.normalize();
-         Console.WriteLine("v1.normalize()         = {0}", v1);                       //normalizacija pocetnog vektora
 
          Console.WriteLine();
-         Console.WriteLine("Vector4D.scale_by(v1, 2) = {0}", Vector4D.scale_by(v1, 2));   //vracanje novog vektora kao skalirani pocetni
-         v1.scale_by(2);
-         Console.WriteLine("v1.scale_by(2)           = {0}", v1);                         //skaliranje pocetnog vektora datim faktorom
+         Console.WriteLine("v1.norm()        = {0}", v1.norm()       );   //normalizacija pocetnog vektora
+         Console.WriteLine("v1.scale_by(2)   = {0}", v1.scale_by(2)  );   //skaliranje vektora faktorom
+         Console.WriteLine("v1.scale_to(0.5) = {0}", v1.scale_to(0.5));   //skaliranje vektora na odredjenu velicinu
 
          Console.WriteLine();
-         Console.WriteLine("Vector4D.scale_to(v1, 0.5) = {0}", Vector4D.scale_to(v1, 0.5));   //vracanje novog vektora kao skalirani pocetni
-         v1.scale_to(0.5);
-         Console.WriteLine("v1.scale_by(0.5)           = {0}", v1);                           //skaliranje pocetnog vektora na datu bazu
-
-
-         Console.WriteLine();
-         Console.WriteLine("v1.len()            = {0,3:G4}", v1.len()        );   //duzina vektora
-         Console.WriteLine("Vector3D.len(v1)    = {0,3:G4}", Vector4D.len(v1));   //staticki pozvana duzina vektora
+         Console.WriteLine("angleXY(v1) = {0}", angleXY(v1));   //ugao vektora sa XY-ravni
+         Console.WriteLine("angleXZ(v1) = {0}", angleXZ(v1));   //ugao vektora sa XZ-ravni
+         Console.WriteLine("angleYZ(v1) = {0}", angleYZ(v1));   //ugao vektora sa YZ-ravni
 
          Console.WriteLine();
-         Console.WriteLine("v1.len_sq()         = {0}", v1.len_sq()        );   //kvadrat duzine vektora
-         Console.WriteLine("Vector3D.len_sq(v1) = {0}", Vector4D.len_sq(v1));   //staticki pozvan kvadrat duzine vektora
+         Console.WriteLine("v1.len()    = {0,3:G4}", v1.len()   );   //duzina vektora
+         Console.WriteLine("v1.len_sq() = {0}",      v1.len_sq());   //kvadrat duzine vektora
 
 
 

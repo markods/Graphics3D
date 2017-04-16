@@ -59,11 +59,11 @@ namespace MGL
              digits = sizeof(double);
          
          
-         //   10^-k < 10^-digits     /mantisu ignorisemo
+         //   10^-k < 10^-digits     //we can ignore the mantissa (in the next step) if the powers don't match
          //  <=> -k < -digits
 
          if ( x == 0 )
-            return ( -dec_exp(y) > digits );   //leva strana je negativna
+            return ( -dec_exp(y) > digits );   //left side of the eq. is negative
          if( y == 0 )
             return ( -dec_exp(x) > digits );   //         -||-
          

@@ -18,7 +18,7 @@ namespace MGL
                x[i, j] = 0;
       }
 
-      public Matrix4D(double x11, double x12, double x13, double x14,
+      public Matrix4D(double x11, double x12, double x13, double x14,   //constructor using 16 input arguments as fields
                       double x21, double x22, double x23, double x24,
                       double x31, double x32, double x33, double x34,
                       double x41, double x42, double x43, double x44)
@@ -31,7 +31,7 @@ namespace MGL
          x[3,0] = x41;   x[3,1] = x42;   x[3,2] = x43;   x[3,3] = x44;
       }
 
-      public Matrix4D(double[] _x)
+      public Matrix4D(double[] _x)    //constructor using an input array of doubles length 16
       {
          if( _x.GetLength(0) != dimm*dimm )
             throw new ArgumentException( String.Format("Input array dimensions must be equal to {0}x{0}", dimm) );
@@ -44,7 +44,7 @@ namespace MGL
                x[i, j] = _x[i*dimm + j];
       }
 
-      public Matrix4D(double[,] _x)
+      public Matrix4D(double[,] _x)   //constructor using an input two-dimensional array of dimensions 4 by 4
       {
          if( _x.GetLength(0) != dimm || _x.GetLength(1) != dimm )
             throw new ArgumentException( String.Format("Input array dimensions must be equal to {0}x{0}", dimm) );
@@ -57,7 +57,7 @@ namespace MGL
                x[i, j] = _x[i, j];
       }
 
-      public Matrix4D(Matrix4D A)
+      public Matrix4D(Matrix4D A)     //copy constructor
       {
          x = new double[dimm, dimm];
          
@@ -69,11 +69,11 @@ namespace MGL
 
 
       #region Special matrices
-      public static Matrix4D zero
+      public static Matrix4D zero   //matrix whose fields are all zero
       {
          get { return new Matrix4D(); }
       }
-      public static Matrix4D I
+      public static Matrix4D I      //identity matrix (diagonal fields are one, all others are zero)
       {
          get {
             Matrix4D A = new Matrix4D();
@@ -156,15 +156,11 @@ namespace MGL
       }
       
 
-      public static Matrix4D rotate(double tx = 0, double ty = 0, double tz = 0)
+      public static Matrix4D rotate(double tx, double ty, double tz)   //counter-clockwise rotations about X-axis, Y-axis and Z-axis, in that order
       {
          return rotateZ(tz)*rotateY(ty)*rotateX(tx);   //by convention
       }
-      public static Matrix4D rotate(Vector3D rot)
-      {
-         return rotateZ(rot.getz())*rotateY(rot.gety())*rotateX(rot.getx());   //by convention   //---------------------------------- !!!!!!!!!!! ne valja
-      }
-      public static Matrix4D scale(double kx = 0, double ky = 0, double kz = 0)
+      public static Matrix4D scale (double kx, double ky, double kz)   //scaling X, Y and Z-axes (from origin)
       {
          Matrix4D A = I;
 
@@ -181,24 +177,7 @@ namespace MGL
 
          return A;
       }
-      public static Matrix4D scale(Vector3D v)
-      {
-         Matrix4D A = I;
-
-         //   X        Y        Z        W
-         //[  kx,      0,       0,       0  ]
-         //[  0,       ky,      0,       0  ]
-         //[  0,       0,       kz,      0  ]
-         //[  0,       0,       0,       1  ]
-
-         A.x[0,0] = v.getx();
-         A.x[1,1] = v.gety();
-         A.x[2,2] = v.getz();
-
-
-         return A;
-      }
-      public static Matrix4D transl(double lx = 0, double ly = 0, double lz = 0)
+      public static Matrix4D transl(double lx, double ly, double lz)   //translation on X, Y and Z-axes from origin
       {
          Matrix4D A = I;
          
@@ -216,27 +195,13 @@ namespace MGL
 
          return A;
       }
-      public static Matrix4D transl(Vector3D v)
+      public static Matrix4D transl(Vector4D u)                        //translation by given vector from origin
       {
-         Matrix4D A = I;
-         
-         //   X        Y        Z        W
-         //[  1,       0,       0,      lx  ]
-         //[  0,       1,       0,      ly  ]
-         //[  0,       0,       1,      lz  ]
-         //[  0,       0,       0,       1  ]
-
-
-         A.x[0,3] = v.getx();
-         A.x[1,3] = v.gety();
-         A.x[2,3] = v.getz();
-
-
-         return A;
+         return Matrix4D.transl(u.getnormx(), u.getnormy(), u.getnormz());
       }
 
 
-      public static Matrix4D projectZ(double d)   //perspective projection matrix
+      public static Matrix4D projXY(double d)   //perspective projection matrix (useful for drawing to monitor)
       {
          if( Cmath.approx(d, 0) )
             throw new ArgumentException("Viewing plane cannot be singular");
@@ -255,33 +220,6 @@ namespace MGL
 
          return A;
       }
-      /*   //---------------------------------
-      public static Matrix4D frustrum()   //frustrum culling matrix
-      {
-         Matrix4D A = Zero;
-         
-
-         //      X           Y              Z             W
-         //[  2n/(r-l),      0,        (r+l)/(r-l),       0       ]
-         //[     0,       2n/(t-b),    (t+b)/(t-b),       0       ]
-         //[     0,          0,       -(f+n)/(f-n),   -2fn/(f-n)  ]
-         //[     0,          0,            -1,            0       ]
-
-
-         //     y|
-         //      |
-         //      |_ _ _ _
-         //     /       x
-         //    /
-         //   / z
-
-
-         ...
-
-
-         return A;
-      }
-      */
       #endregion
 
 
@@ -301,7 +239,6 @@ namespace MGL
 
 
       #region Matrix operators
-      
       public static Matrix4D operator +(Matrix4D A, Matrix4D B) => new Matrix4D( Cmath.add(A.x, B.x) );
       public static Matrix4D operator -(Matrix4D A, Matrix4D B) => new Matrix4D( Cmath.sub(A.x, B.x) );
       
@@ -349,7 +286,7 @@ namespace MGL
       }
 
 
-      public static Matrix4D transp(Matrix4D A)
+      public static Matrix4D transp(Matrix4D A)   //returns a new matrix that is the transpose of the input matrix
       {
          double[,] a = new double[dimm, dimm];
 
@@ -363,11 +300,8 @@ namespace MGL
 
 
       #region Output
-      //ispisuje elemente matrice na samo prvih par decimala
-      public override string ToString()  => Cmath.write(x);
-
-      //ispisuje elemente matrice na sve decimale
-      public          string write_all() => Cmath.write_all(x);
+      public override string ToString()  => Cmath.write(x);       //outputs matrix fields rounded to the first couple of decimals
+      public          string write_all() => Cmath.write_all(x);   //outputs matrix fields with maximum precision
       #endregion
 
 
@@ -376,11 +310,11 @@ namespace MGL
       {
          Console.WriteLine("----------------- <<<<<<<< Matrix4D test 1");
 
-         double[,] a = { { 1,  2,  3,  4}, { 5,  6,  7,  8}, { 9, 10, 11, 12}, {13, 14, 15, 16} };
-         double[,] b = { {16, 15, 14, 13}, {12, 11, 10,  9}, { 8,  7,  6,  5}, { 4,  3,  2,  1} };
+         double[,] arr1 = { { 1,  2,  3,  4}, { 5,  6,  7,  8}, { 9, 10, 11, 12}, {13, 14, 15, 16} };
+         double[,] arr2 = { {16, 15, 14, 13}, {12, 11, 10,  9}, { 8,  7,  6,  5}, { 4,  3,  2,  1} };
          
-         Matrix4D M1 = new Matrix4D(a);
-         Matrix4D M2 = new Matrix4D(b);
+         Matrix4D M1 = new Matrix4D(arr1);
+         Matrix4D M2 = new Matrix4D(arr2);
          
          Console.WriteLine("M1 = {0}", M1);
          Console.WriteLine("M2 = {0}", M2);
@@ -414,41 +348,26 @@ namespace MGL
 
          Console.WriteLine("----------------");
 
-         Matrix4D M31 = Matrix4D.rotateX(3);
-         Matrix4D M32 = Matrix4D.rotateY(5);
-         Matrix4D M33 = Matrix4D.rotateZ(7);
-
-         Matrix4D M41 = Matrix4D.rotate(3, 5, 7);
-         Matrix4D M42 = Matrix4D.rotate(new Vector3D(3, 5, 7));
-         Matrix4D M51 = Matrix4D.transl(3, 5, 7);
-         Matrix4D M52 = Matrix4D.transl(new Vector3D(3, 5, 7));
-         Matrix4D M61 = Matrix4D.scale (3, 5, 7);
-         Matrix4D M62 = Matrix4D.scale (new Vector3D(3, 5, 7));
-
-         Matrix4D M7 = Matrix4D.projectZ(5);
-
+         double pi = 3.14;   //approximately PI
+         double a  = 3;      //some random distinct values
+         double b  = 5;
+         double c  = 7;
 
 
          Console.WriteLine();
-         Console.WriteLine("Matrix4D.roll (5) = {0}", M31);
-         Console.WriteLine("Matrix4D.pitch(5) = {0}", M32);
-         Console.WriteLine("Matrix4D.yaw  (5) = {0}", M33);
+         Console.WriteLine("Matrix4D.rotateX({0}) = {1}", pi, Matrix4D.rotateX(pi));
+         Console.WriteLine("Matrix4D.potateY({0}) = {1}", pi, Matrix4D.rotateY(pi));
+         Console.WriteLine("Matrix4D.rotateZ({0}) = {1}", pi, Matrix4D.rotateZ(pi));
 
 
          Console.WriteLine();
-         Console.WriteLine("Matrix4D.rotate(3, 5, 7) = {0}", M41);
-         Console.WriteLine("Matrix4D.rotate(new Vector3D(3, 5, 7)) = {0}", M42);
+         Console.WriteLine("Matrix4D.rotate({0}, {1}, {2}) = {3}", a, b, c, Matrix4D.rotate(a, b, c));
+         Console.WriteLine("Matrix4D.transl({0}, {1}, {2}) = {3}", a, b, c, Matrix4D.transl(a, b, c));
+         Console.WriteLine("Matrix4D.transl(new Vector4D({0}, {1}, {2})) = {3}", a, b, c, Matrix4D.transl( new Vector4D(a, b, c) ) );
+         Console.WriteLine("Matrix4D.scale ({0}, {1}, {2}) = {3}", a, b, c, Matrix4D.scale (a, b, c));
 
          Console.WriteLine();
-         Console.WriteLine("Matrix4D.transl(3, 5, 7) = {0}", M51);
-         Console.WriteLine("Matrix4D.transl(new Vector3D(3, 5, 7)) = {0}", M52);
-
-         Console.WriteLine();
-         Console.WriteLine("Matrix4D.scale (3, 5, 7) = {0}", M61);
-         Console.WriteLine("Matrix4D.scale (new Vector3D(3, 5, 7)) = {0}", M62);
-
-         Console.WriteLine();
-         Console.WriteLine("Matrix4D.projectZ(5) = {0}", M7);
+         Console.WriteLine("Matrix4D.projXY({0}) = {1}", b, Matrix4D.projXY(b));
 
       }
       #endregion

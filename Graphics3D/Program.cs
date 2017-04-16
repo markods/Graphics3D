@@ -34,7 +34,7 @@ namespace Graphics3D
          //Vector4D.test1();
          //Matrix4D.test1();
          //Triangle.test1();
-         //Shape.test1();
+         //Mesh.test1();
 
          Console.WriteLine("========================================");
       }

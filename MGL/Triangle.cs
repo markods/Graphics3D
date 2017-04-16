@@ -45,7 +45,6 @@ namespace MGL
          return new Vector3D(vertex[index]);
       }
       public Color get_color() => color;
-      public Vector3D get_center() => (vertex[0] + vertex[1] + vertex[2]) / 3;
       #endregion
 
 
@@ -60,6 +59,11 @@ namespace MGL
          => new Triangle(M * (Vector4D) T.getv(0),
                          M * (Vector4D) T.getv(1),
                          M * (Vector4D) T.getv(2), T.get_color());
+      #endregion
+
+
+      #region Triangle properties
+      public Vector3D center() => (vertex[0] + vertex[1] + vertex[2]) / 3;
       #endregion
 
 

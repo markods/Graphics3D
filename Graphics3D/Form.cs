@@ -14,20 +14,17 @@ namespace Graphics3D
       //Globalne promenljive za crtanje
       private Bitmap bitmap;            //graficki bafer koji se prosledjuje PictureBox-u
       private bool invalidate_bitmap;   //da li treba menjati dimenzije grafickog bafera
+
       private int draw_wid, draw_hei;   //prostor u PictureBox-u za crtanje
-
-      List<Shape> scene;       //skup svih shape-ova na sceni
-
-
-      private Pen AxisPen;
-      private Pen Grid10Pen;
-      private Pen Grid100Pen;
+      List<Mesh> scene;                 //skup svih shape-ova na sceni
 
 
 
-      //------------------------------------------!!!!!!!!!! testiranje
-      Shape quboid;
-      Shape circle;
+      //===================Testing=====================
+      Mesh shape2D;
+      Mesh shape3D;
+      private int detail;        //level of detail (useful for spheres, etc.)
+
 
       //potrepstine za osnovne rotacije
       private double radx;       //counter-clockwise ugao u radijanima oko Ox-ose
@@ -48,17 +45,9 @@ namespace Graphics3D
          bitmap            = null;
          invalidate_bitmap = true;
 
-         scene = new List<Shape>();
-
-         
-         AxisPen    = new Pen(Color.Gray,      1);
-         Grid10Pen  = new Pen(Color.White,     1);
-         Grid100Pen = new Pen(Color.LightGray, 1);
-
-
-         //citace se verovatno iz fajla   //------------------------------!!!!!!!!!!!!!!!!!!!!!!!
-         quboid = Shape.quboid( 100, 100, 100, Color.Green, 6 );
-         circle = Shape.circle( 50,            Color.Red,   16);
+         scene  = new List<Mesh>();
+         detail = 0;
+         UpdateModels();
 
 
          radx = 0;
@@ -92,38 +81,53 @@ namespace Graphics3D
 
 
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
-      private void DrawTriangle( Graphics g, Triangle T )
+      private void DrawShape( Graphics g, Mesh S, Matrix4D M = null )
       {
+         if( g == null )   return;
+         if( S == null )   return;
+         if( M == null )   M = Matrix4D.I;
+
+
          Point[]  points = new Point[Triangle.ver_cnt];
          Vector3D vertex;
-
-         for( int i = 0; i < Triangle.ver_cnt; i++ )
-         {
-            vertex    = T.getv(i);
-            points[i] = new Point( (int) vertex.getx(), (int) vertex.gety() );
-         }
-
-      // g.FillPolygon( new SolidBrush( T.get_color()    ), points );
-         g.DrawPolygon( new Pen       ( T.get_color(), 1 ), points );
-      }
-
-      [MethodImpl(MethodImplOptions.AggressiveInlining)]
-      private void DrawShape( Graphics g, Shape S, Matrix4D M = null )
-      {
-         if( M == null )
-            M = Matrix4D.I;
-         
          Triangle T;
-         Matrix4D transf = M * S.get_transf();
 
 
-         for( int i = 0; i < S.get_triangle_num(); i++ )
+
+         for( int i = 0; i < S.triangle_cnt(); i++ )
          {
-            T = transf * S.get_triangles()[i];
-            DrawTriangle( g, T );
+            T = M * S.get_triangles()[i];   //applies shape transformations to each triangle of the specific shape
+
+            for( int k = 0; k < Triangle.ver_cnt; k++ )
+            {
+               vertex    = T.getv(k);
+               points[k] = new Point( (int) vertex.getx(), (int) vertex.gety() );
+            }
+
+
+         // g.FillPolygon( new SolidBrush( T.get_color()    ), points );
+            g.DrawPolygon( new Pen       ( T.get_color(), 1 ), points );
          }
+
       }
 
+
+      private void UpdateModels()
+      {
+         //===================Testing=====================
+      // shape2D = Mesh.circle   ( 50,            Color.Orange, 3 * detail );
+         shape2D = Mesh.rectangle( 100, 100,      Color.Orange, detail     );   //-------------------popraviti
+
+
+      // shape3D = Mesh.quboid   ( 100, 100, 100, Color.Green,  detail     );   //-------------------popraviti
+
+      // shape3D = Mesh.psphere  ( 50,            Color.Green,  detail     );   //-------------------popraviti
+         shape3D = Mesh.uvsphere ( 50,            Color.Green,  detail     );
+      // shape3D = Mesh.icosphere( 50,            Color.Green,  detail     );
+      
+      // shape3D = Mesh.cyllinder( 50,  100,      Color.Green,  detail     );   //-------------------popraviti
+      // shape3D = Mesh.cone     ( 50,  100,      Color.Green,  detail     );
+      }
 
       private void PictureBox_Paint(object sender, PaintEventArgs e)
       {
@@ -144,47 +148,58 @@ namespace Graphics3D
 
 
 
-
-         //---------------------------------------!!!!!!!!!!!!!! ovde ce biti vece izmene
-
          //Iscrtavanje koordinatnog sistema viewporta
-         g.DrawLine(AxisPen, -draw_wid/2, 0, draw_wid/2, 0); // x osa
+         Pen AxisPen    = new Pen(Color.Gray,      1);
+         Pen Grid10Pen  = new Pen(Color.White,     1);
+         Pen Grid100Pen = new Pen(Color.LightGray, 1);
+
+
+         g.DrawLine(AxisPen, -draw_wid/2, 0, draw_wid/2, 0);   //X-osa
          int m10  = 1;
          int m100 = 3;
          for( int i = -(draw_wid/2/10)*10; i < draw_wid/2; i += 10 )
          {
             if( i == 0 ) continue;
             g.DrawLine( (i%100 == 0 ? Grid100Pen : Grid10Pen),  i, -draw_hei/2,                  i,  draw_hei/2 );
-            g.DrawLine(                            AxisPen,     i, (i%100 == 0 ? -m100 : -m10),  i, (i%100 == 0 ? +m100 : m10) ); // podeoci na x osi
+            g.DrawLine(                            AxisPen,     i, (i%100 == 0 ? -m100 : -m10),  i, (i%100 == 0 ? +m100 : m10) );   //podeoci na X-osi
          }
-         g.DrawLine(AxisPen, 0, -draw_hei/2, 0, draw_hei/2); // y osa
+         g.DrawLine(AxisPen, 0, -draw_hei/2, 0, draw_hei/2);   //Y-osa
          for( int i = -(draw_hei/2/10)*10; i < draw_hei/2; i += 10 )
          {
             if( i == 0 ) continue;
             g.DrawLine( (i%100 == 0 ? Grid100Pen : Grid10Pen), -draw_wid/2,                  i, draw_wid/2,                   i );
-            g.DrawLine(                            AxisPen,    (i%100 == 0 ? -m100 : -m10),  i, (i%100 == 0 ? +m100 : +m10),  i ); // podeoci na y osi
+            g.DrawLine(                            AxisPen,    (i%100 == 0 ? -m100 : -m10),  i, (i%100 == 0 ? +m100 : +m10),  i );   //podeoci na Y-osi
          }
 
-/*
-         //Koordinatni sistem sveta
-         Vector4D x1 = 100 * Vector4D.i;
-         Vector4D y1 = 100 * Vector4D.j;
-         Vector4D z1 = 100 * Vector4D.k;
-*/
 
 
 
-         //----------------------------------------------!!!!!!!!!!!!!!!!!!! testiranje
+         //===================Testing=====================
 
          //perspective projection matrix
-         Matrix4D Pers = Matrix4D.projectZ(200);  // 200 znaci da se viewport nalazi na udaljenosti 200 od posmatraca
+         Matrix4D pers = Matrix4D.projXY(200);  // 200 znaci da se viewport nalazi na udaljenosti 200 od posmatraca
 
-         Matrix4D quboid_transf = Pers * Matrix4D.transl( 0,   0, -200 ) * Matrix4D.rotate( radx, rady, 0 );
-         Matrix4D circle_transf = Pers * Matrix4D.transl( 0,   0, -200 ) * Matrix4D.rotateZ( Cmath.PI / 2 - radz )
-                                       * Matrix4D.transl( 150, 0,    0 ) * Matrix4D.rotateX( Cmath.PI / 2 - radx );
 
-         DrawShape( g, quboid, quboid_transf );
-         DrawShape( g, circle, circle_transf );
+         Matrix4D transf2D = pers * Matrix4D.transl(   0,   0, -200 ) * Matrix4D.rotateZ( Cmath.PI / 2 - radz )
+                                  * Matrix4D.transl( 150,   0,    0 ) * Matrix4D.rotateX( Cmath.PI / 2 - radx );
+
+         Matrix4D transf3D = pers * Matrix4D.transl(   0,   0, -200 ) * Matrix4D.rotate ( radx, 0, radz );
+
+
+         DrawShape( g, shape2D, transf2D );
+         DrawShape( g, shape3D, transf3D );
+
+
+         //viewing frustrum culling matrix
+         //
+         //      X           Y              Z             W
+         //[  2n/(r-l),      0,        (r+l)/(r-l),       0       ]
+         //[     0,       2n/(t-b),    (t+b)/(t-b),       0       ]
+         //[     0,          0,       -(f+n)/(f-n),   -2fn/(f-n)  ]
+         //[     0,          0,            -1,            0       ]
+
+         //===============================================
+
 
 
 
@@ -202,9 +217,23 @@ namespace Graphics3D
 
       private void Form_KeyDown(object sender, KeyEventArgs e)
       {
-         //----------------------------------------------------!!!!!!!!!!!!!!!!!! menjace se
          switch( e.KeyCode )
          {
+            case Keys.Add:
+               if(detail < 10)
+               {
+                  detail++;
+                  UpdateModels();
+               }
+               break;
+            case Keys.Subtract:
+               if(detail > 0)
+               {
+                  detail--;
+                  UpdateModels();
+               }
+               break;
+            
             case Keys.Up:
                break;
             case Keys.Down:
