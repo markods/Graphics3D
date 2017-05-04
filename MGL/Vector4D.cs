@@ -69,7 +69,7 @@ namespace MGL
 
 
       #region Casts
-      public static implicit operator Vector3D( Vector4D u ) => new Vector3D(u.x/u.w, u.y/u.w, u.z/u.w);
+      public static implicit operator Vector3D( Vector4D u ) => new Vector3D(u.getnormx(), u.getnormy(), u.getnormz());
       #endregion
 
 
@@ -78,17 +78,43 @@ namespace MGL
       public double gety() => y;
       public double getz() => z;
       public double getw() => w;
+      
+      public double this[int i]
+      {
+         get
+         {
+            switch( i )
+            {
+               case 0: return x;
+               case 1: return y;
+               case 2: return z;
+               case 3: return w;
+               default:  throw new ArgumentException("Index out of range [2]0");
+            }
+         }
+         set
+         {
+            switch( i )
+            {
+               case 0: x = value; break;
+               case 1: y = value; break;
+               case 2: z = value; break;
+               case 3: w = value; break;
+               default:  throw new ArgumentException("Index out of range [2]0");
+            }
+         }
+      }
 
-      public double getnormx() => x/w;
-      public double getnormy() => y/w;
-      public double getnormz() => z/w;
+      public double getnormx() => (w != 0 ? x/w : 0);
+      public double getnormy() => (w != 0 ? y/w : 0);
+      public double getnormz() => (w != 0 ? z/w : 0);
       #endregion
 
 
       #region Vector operators
-      public          bool Equals(Vector4D u) => Cmath.approx(x / w,   u.getx() / u.getw())
-                                              && Cmath.approx(y / w,   u.gety() / u.getw())
-                                              && Cmath.approx(z / w,   u.getz() / u.getw());
+      public          bool Equals(Vector4D u) => Cmath.approx(getnormx(), u.getnormx())
+                                              && Cmath.approx(getnormy(), u.getnormy())
+                                              && Cmath.approx(getnormz(), u.getnormz());
       public override bool Equals(object obj)
       {
          if( obj == null )   return false;
@@ -103,12 +129,12 @@ namespace MGL
 
       public override int GetHashCode() => Convert.ToInt32(x/w) ^ Convert.ToInt32(y/w) ^ Convert.ToInt32(z/w);   //preporuceno od strane kompajlera da se napravi
 
-      public static bool operator ==(Vector4D u, Vector4D v) =>  Cmath.approx(u.x / u.w,   v.x / v.w)
-                                                             &&  Cmath.approx(u.y / u.w,   v.y / v.w)
-                                                             &&  Cmath.approx(u.z / u.w,   v.z / v.w);
-      public static bool operator !=(Vector4D u, Vector4D v) => !Cmath.approx(u.x / u.w,   v.x / v.w)
-                                                             || !Cmath.approx(u.y / u.w,   v.y / v.w)
-                                                             || !Cmath.approx(u.z / u.w,   v.z / v.w);
+      public static bool operator ==(Vector4D u, Vector4D v) =>  Cmath.approx(u.getnormx(),   v.getnormx())
+                                                             &&  Cmath.approx(u.getnormy(),   v.getnormy())
+                                                             &&  Cmath.approx(u.getnormz(),   v.getnormz());
+      public static bool operator !=(Vector4D u, Vector4D v) => !Cmath.approx(u.getnormx(),   v.getnormx())
+                                                             || !Cmath.approx(u.getnormy(),   v.getnormy())
+                                                             || !Cmath.approx(u.getnormz(),   v.getnormz());
 
 
       public static Vector4D operator +(Vector4D u, Vector4D v)
@@ -149,14 +175,13 @@ namespace MGL
 
 
       public static Vector4D vect_mult(Vector4D u, Vector4D v)
-            => Cmath.approx(u.w, v.w) ? new Vector4D( (u.y*v.z - v.y*u.z)/u.w, -(u.x*v.z - v.x*u.z)/u.w, (u.x*v.y - v.x*u.y)/u.w, u.w     )
+            => Cmath.approx(u.w, v.w) ? new Vector4D( (u.y*v.z - v.y*u.z)/u.w, -(u.x*v.z - v.x*u.z)/u.w, (u.x*v.y - v.x*u.y)/u.w,     v.w )
                                       : new Vector4D( (u.y*v.z - v.y*u.z),     -(u.x*v.z - v.x*u.z),     (u.x*v.y - v.x*u.y),     u.w*v.w );
       
       //|i    j    k  |    - ne mora nigde da se mnozi sa u.w i v.w,
       //|u.x  u.y  u.z|      jer se implicitno desava sledece:
       //|v.x  v.y  v.z|   1. vektorski se mnoze norm. (w = 1) vektori u i v,
       //                  2. dobijeni vektor se mnozi sa koef. u.w i v.w
-
 
       #endregion
 
@@ -196,6 +221,19 @@ namespace MGL
          return this;
       }
 
+      public Vector4D unitize()
+      {
+         double l = len();
+         if( l == 0 )
+          //throw new ArgumentException("Vector4D has zero length");
+            return this;
+
+         x /= l;
+         y /= l;
+         z /= l;
+       //w /= l;
+         return this;
+      }
 
       public static double angleXY(Vector3D u) => Cmath.arcsin(k*u / u.len());   //ugao koji vektor zaklapa sa XY-ravni, u matematickom smeru
       public static double angleXZ(Vector3D u) => Cmath.arcsin(j*u / u.len());   //ugao koji vektor zaklapa sa XZ-ravni, u matematickom smeru

@@ -41,7 +41,7 @@
          this.PictureBox.Location = new System.Drawing.Point(0, 0);
          this.PictureBox.Margin = new System.Windows.Forms.Padding(0);
          this.PictureBox.Name = "PictureBox";
-         this.PictureBox.Size = new System.Drawing.Size(624, 441);
+         this.PictureBox.Size = new System.Drawing.Size(784, 561);
          this.PictureBox.TabIndex = 0;
          this.PictureBox.TabStop = false;
          this.PictureBox.Paint += new System.Windows.Forms.PaintEventHandler(this.PictureBox_Paint);
@@ -57,7 +57,7 @@
          this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
          this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
          this.BackColor = System.Drawing.SystemColors.ActiveCaption;
-         this.ClientSize = new System.Drawing.Size(624, 441);
+         this.ClientSize = new System.Drawing.Size(784, 561);
          this.Controls.Add(this.PictureBox);
          this.DoubleBuffered = true;
          this.Name = "Form";

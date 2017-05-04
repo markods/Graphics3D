@@ -11,3 +11,4 @@ D:\!!!\!PROJEKTI\MarkoGL\MGL\bin\Debug\Microsoft.VisualStudio.DebuggerVisualizer
 D:\!!!\!PROJEKTI\MarkoGL\MGL\bin\Debug\Microsoft.VisualStudio.DebuggerVisualizers.xml
 D:\!!!\!PROJEKTI\MarkoGL\MGL\obj\Debug\MGL.dll
 D:\!!!\!PROJEKTI\MarkoGL\MGL\obj\Debug\MGL.pdb
+D:\!!!\!PROJEKTI\MarkoGL\MGL\obj\Debug\MGL.csprojResolveAssemblyReference.cache

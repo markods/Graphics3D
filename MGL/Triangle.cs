@@ -5,31 +5,31 @@ namespace MGL
 {
    public class Triangle
    {
-      private Vector3D[] vertex;
+      private Vector4D[] vertex;
       private Color color;
 
       public const int ver_cnt = 3;
 
 
       #region Constructors
-      public Triangle(Vector3D vertex1, Vector3D vertex2, Vector3D vertex3, Color _color)   //counter-clockwise order of vertices
+      public Triangle(Vector4D vertex1, Vector4D vertex2, Vector4D vertex3, Color _color)   //counter-clockwise order of vertices
       {
-         vertex = new Vector3D[3];
+         vertex = new Vector4D[3];
 
-         vertex[0] = new Vector3D(vertex1);
-         vertex[1] = new Vector3D(vertex2);
-         vertex[2] = new Vector3D(vertex3);
+         vertex[0] = new Vector4D(vertex1);
+         vertex[1] = new Vector4D(vertex2);
+         vertex[2] = new Vector4D(vertex3);
 
          color = _color;
       }
 
       public Triangle(Triangle t)
       {
-         vertex = new Vector3D[3];
+         vertex = new Vector4D[3];
 
-         vertex[0] = new Vector3D(t.vertex[0]);
-         vertex[1] = new Vector3D(t.vertex[1]);
-         vertex[2] = new Vector3D(t.vertex[2]);
+         vertex[0] = new Vector4D(t.vertex[0]);
+         vertex[1] = new Vector4D(t.vertex[1]);
+         vertex[2] = new Vector4D(t.vertex[2]);
 
          color = t.color;
       }
@@ -37,21 +37,29 @@ namespace MGL
 
 
       #region Getters
-      public Vector3D getv(int index)
+      public Vector4D getv(int index)
       {
-         if( index < 0 || index > ver_cnt )
+         if( index < 0 || index >= ver_cnt )
             throw new ArgumentException("Index of vertex is not in set [3]");
          
-         return new Vector3D(vertex[index]);
+         return new Vector4D(vertex[index]);
       }
       public Color get_color() => color;
       #endregion
 
 
       #region Setters
+      public Vector4D setv(int index, Vector4D v)
+      {
+         if( index < 0 || index >= ver_cnt )
+            throw new ArgumentException("Index of vertex is not in set [3]");
+         
+         return vertex[index] = v;
+      }
       public void set_color(Color _color)
       { color = _color; }
       #endregion
+
 
 
       #region Triangle operators
@@ -63,7 +71,15 @@ namespace MGL
 
 
       #region Triangle properties
-      public Vector3D center() => (vertex[0] + vertex[1] + vertex[2]) / 3;
+      public Vector4D center() => (vertex[0] + vertex[1] + vertex[2]) / 3;
+
+      public Triangle norm()
+      {
+         vertex[0].norm();
+         vertex[1].norm();
+         vertex[2].norm();
+         return this;
+      }
       #endregion
 
 
@@ -82,9 +98,9 @@ namespace MGL
       {
          Console.WriteLine("----------------- <<<<<<<< Triangle test 1");
 
-         Vector3D v1 = new Vector3D(1, 2, 3);
-         Vector3D v2 = new Vector3D(4, 5, 6);
-         Vector3D v3 = new Vector3D(7, 8, 9);
+         Vector4D v1 = new Vector4D(1, 2, 3);
+         Vector4D v2 = new Vector4D(4, 5, 6);
+         Vector4D v3 = new Vector4D(7, 8, 9);
          Color c = Color.Red;
 
          Triangle T = new Triangle(v1, v2, v3, c);

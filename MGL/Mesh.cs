@@ -50,23 +50,22 @@ namespace MGL
 
 
          Mesh S = new Mesh();
-         Vector3D A, B, C, D;
+         Vector4D A, B, C, D;
 
 
          int    edges = level;   //number of sub-rectangle edges on rectangle edge
          double lenx  = ax / edges;
          double lenz  = az / edges;
 
-
          for( int i = 0; i < edges; i++ )
             for( int j = 0; j < edges; j++ )
             {
-               A = new Vector3D(-ax/2 +  j    * lenx,   0,   -az/2 + (i+1) * lenz );
-               B = new Vector3D(-ax/2 + (j+1) * lenx,   0,   -az/2 + (i+1) * lenz );
-               C = new Vector3D(-ax/2 + (j+1) * lenx,   0,   -az/2 +  i    * lenz );
-               D = new Vector3D(-ax/2 +  j    * lenx,   0,   -az/2 +  i    * lenz );
+               A = new Vector4D(-ax/2 +  j    * lenx,   0,   -az/2 + (i+1) * lenz );
+               B = new Vector4D(-ax/2 + (j+1) * lenx,   0,   -az/2 + (i+1) * lenz );
+               C = new Vector4D(-ax/2 + (j+1) * lenx,   0,   -az/2 +  i    * lenz );
+               D = new Vector4D(-ax/2 +  j    * lenx,   0,   -az/2 +  i    * lenz );
 
-               //A-B-C-D
+               //trouglovi su orijentisani na gore
                S.add(new Triangle(A, B, C, c));
                S.add(new Triangle(A, C, D, c));
             }
@@ -74,6 +73,8 @@ namespace MGL
 
          return S;
       }
+
+
       public static Mesh circle   (double r,             Color c, int level = 0)   //r - radius
       {
          if( r <= 0 )
@@ -85,14 +86,14 @@ namespace MGL
 
 
          Mesh S = new Mesh();
-         Vector3D O, A, B;
+         Vector4D O, A, B;
 
 
          int    edges = level;                //number of edges (slices) that approximate the circle
          double angle = 2*Cmath.PI / edges;   //angle of a slice of the circle (like orange slices)
 
 
-         O = Vector3D.zero;
+         O = Vector4D.zero;
          for( int k = 0; k < edges; k++ )
          {
             //Matrix4D mnozenje sa skalarom mnozi i w komponentu (donje desno polje matrice) sto ne treba da se desava
@@ -104,11 +105,45 @@ namespace MGL
 
          return S;
       }
+
+      public static Mesh hollowcircle (double rout, double rin, Color c, int level = 0)   //rout - spoljni radius, rin - unutrasnji radius
+      {
+         if( rout <= 0 || rin <= 0 )
+            throw new ArgumentException("Radius of circle must be greater than zero");
+         if( level < 0 )
+            throw new ArgumentException("Level of refinement must be non-negative");
+
+         level += 3;   //magical constant
+
+
+         Mesh S = new Mesh();
+         Vector4D A, B, C, D;
+
+
+         int    edges = level;                //number of edges (slices) that approximate the circle
+         double angle = 2*Cmath.PI / edges;   //angle of a slice of the circle (like orange slices)
+
+
+         for( int k = 0; k < edges; k++ )
+         {
+            //Matrix4D mnozenje sa skalarom mnozi i w komponentu (donje desno polje matrice) sto ne treba da se desava
+            A = Matrix4D.rotateY( angle* k    ) * (rout * Vector4D.i);
+            B = Matrix4D.rotateY( angle*(k+1) ) * (rout * Vector4D.i);
+            C = Matrix4D.rotateY( angle*(k+1) ) * (rin  * Vector4D.i);
+            D = Matrix4D.rotateY( angle* k    ) * (rin  * Vector4D.i);
+
+            S.add( new Triangle(A, B, C, c) );
+            S.add( new Triangle(A, C, D, c) );
+         }
+
+         return S;
+      }
+
       #endregion
 
 
       #region Common 3D shapes
-      public static Mesh quboid     (double ax, double az, double ay, Color c, int level = 0)   //ax - length, az - width, ay - height
+      public static Mesh quboid   (double ax, double az, double ay, Color c, int level = 0)   //ax - length, az - width, ay - height
       {
          if( ax <= 0 || az <= 0 || ay <= 0 )
             throw new ArgumentException("All three dimensions of quboid must be greater than zero");
@@ -121,9 +156,9 @@ namespace MGL
 
 
          //vektori nomala ovih pravougaonika su u smeru trece ose (koja nije navedena u imenu) i sa centrom u koordinatnom pocetku
-         Mesh rect_xz =                                rectangle(ax, az, c, level);
-         Mesh rect_xy = Matrix4D.rotateX(Cmath.PI/2) * rectangle(ax, ay, c, level);
-         Mesh rect_zy = Matrix4D.rotateZ(Cmath.PI/2) * rectangle(ay, az, c, level);
+         Mesh rect_xz =                                 rectangle(ax, az, c, level);
+         Mesh rect_xy = Matrix4D.rotateX( Cmath.PI/2) * rectangle(ax, ay, c, level);
+         Mesh rect_zy = Matrix4D.rotateZ(-Cmath.PI/2) * rectangle(ay, az, c, level);
 
          //NAPOMENA - svi trouglovi su orijentisani counter-clockwise, vektori normale su ka spoljasnosti kocke
 
@@ -134,7 +169,7 @@ namespace MGL
          S.add( (Matrix4D.transl(0, 0, -az/2) * Matrix4D.rotateY(Cmath.PI)) * rect_xy );   //C-D-H-G
 
          S.add( (Matrix4D.transl( ax/2, 0, 0)                             ) * rect_zy );   //B-C-G-F
-         S.add( (Matrix4D.transl(-ax/2, 0, 0) * Matrix4D.rotateY(Cmath.PI)) * rect_zy );   //D-A-E-H
+         S.add( (Matrix4D.transl(-ax/2, 0, 0) * Matrix4D.rotateZ(Cmath.PI)) * rect_zy );   //D-A-E-H
 
 
 
@@ -148,7 +183,7 @@ namespace MGL
       */
 
 
-      
+
       public static Mesh psphere  (double r, Color c, int level = 0)   //a sphere that is made up of 8 identical pieces, having a specified number of circle slices
       {
          if( r <= 0 )
@@ -161,8 +196,7 @@ namespace MGL
 
 
          Mesh S = new Mesh();
-         Vector3D A, B, C;
-
+         Vector4D A, B, C;
          double pi = Cmath.PI;
 
 
@@ -191,27 +225,27 @@ namespace MGL
 
 
                // gornja hemisfera
-               A = new Vector3D(x1p,      yp,     z1p    );
-               B = new Vector3D(x2p,      yp,     z2p    );
-               C = new Vector3D(x1pnext,  ypnext, z1pnext);
+               A = new Vector4D(x1p,      yp,     z1p    );
+               B = new Vector4D(x2p,      yp,     z2p    );
+               C = new Vector4D(x1pnext,  ypnext, z1pnext);
                S.add(new Triangle(A, B, C, c));
 
                // gornja hemisfera
-               A = new Vector3D(x2pnext,  ypnext, z2pnext);
-               B = new Vector3D(x2p,      yp,     z2p    );
-               C = new Vector3D(x1pnext,  ypnext, z1pnext);
+               A = new Vector4D(x2p,      yp,     z2p    );
+               B = new Vector4D(x2pnext,  ypnext, z2pnext);
+               C = new Vector4D(x1pnext,  ypnext, z1pnext);
                S.add(new Triangle(A, B, C, c));
 
                // donja hemisfera
-               A = new Vector3D(x1p,     -yp,     z1p    );
-               B = new Vector3D(x1pnext, -ypnext, z1pnext);
-               C = new Vector3D(x2p,     -yp,     z2p    );
+               A = new Vector4D(x1p,     -yp,     z1p    );
+               B = new Vector4D(x1pnext, -ypnext, z1pnext);
+               C = new Vector4D(x2p,     -yp,     z2p    );
                S.add(new Triangle(A, B, C, c));
 
                // donja hemisfera
-               A = new Vector3D(x2pnext, -ypnext, z2pnext);
-               B = new Vector3D(x1pnext, -ypnext, z1pnext);
-               C = new Vector3D(x2p,     -yp,     z2p    );
+               A = new Vector4D(x1pnext, -ypnext, z1pnext);
+               B = new Vector4D(x2pnext, -ypnext, z2pnext);
+               C = new Vector4D(x2p,     -yp,     z2p    );
                S.add(new Triangle(A, B, C, c));
             }
          }
@@ -231,36 +265,40 @@ namespace MGL
 
 
          Mesh S = new Mesh();
-         Vector3D A, B, C, D;
+         Vector4D A, B, C, D;
+         double pi = Cmath.PI;
 
 
          //applies to all levels
-         int    edges = level;                //number of edges that approximate a single stack (like a paralel on a globe)
-         double angle = 2*Cmath.PI / edges;   //angle of a slice of stack (like orange slices)
+         int    stacks = level - 1;             //number of stacks (like a paralel on the globe) that approximate the sphere
+         int    slices = level;                 //number of slices to a stack (like orange slices)
+         double theta  =   Cmath.PI / stacks;   //stack meridian arc height
+         double alpha  = 2*Cmath.PI / slices;   //slice arc length
 
          //applies to a single level
-         double H_lev = r / level;             //vertical heigth of a stack
-         Vector4D O_curr   = r * Vector4D.i;   //center of curr stack
-         Vector4D O_next   = r * Vector4D.i;   //center of next stack
+         Vector4D O_curr;   //center of curr stack
+         Vector4D O_next;   //center of next stack
 
 
 
-         for( int i = 0; i < level; i++ )
+         for( int i = 0; i < stacks; i++ )
          {
-            O_curr = O_next;
-            O_next = new Vector4D( Math.Sqrt( r*r - Math.Pow((i+1)*H_lev, 2) ),   (i+1) * H_lev,   0 );
+            O_curr = Matrix4D.rotateZ(-pi/2 + theta* i   )  *  (r * Vector4D.i);
+            O_next = Matrix4D.rotateZ(-pi/2 + theta*(i+1))  *  (r * Vector4D.i);
 
 
-            for( int k = 0; k < edges; k++ )
+            for( int k = 0; k < slices; k++ )
             {
-               A = Matrix4D.rotateY( angle* k    ) * O_curr;
-               B = Matrix4D.rotateY( angle*(k+1) ) * O_curr;
-               C = Matrix4D.rotateY( angle* k    ) * O_next;
-               D = Matrix4D.rotateY( angle*(k+1) ) * O_next;
+               A = Matrix4D.rotateY( alpha* k    ) * O_curr;
+               B = Matrix4D.rotateY( alpha*(k+1) ) * O_curr;
+               C = Matrix4D.rotateY( alpha*(k+1) ) * O_next;
+               D = Matrix4D.rotateY( alpha* k    ) * O_next;
 
+               if( i != 0 )
+                  S.add( new Triangle(A, B, C, c) );
 
-               S.add( new Triangle(A, B, C, c) );
-               S.add( new Triangle(A, C, D, c) );
+               if( i != stacks-1 )
+                  S.add( new Triangle(A, C, D, c) );
             }
          }
 
@@ -284,22 +322,22 @@ namespace MGL
          double p = (1 + Math.Sqrt(5))/2;   //golden ratio phi
 
          //XZ-plane, counter-clockwise
-         Vector3D A = new Vector3D(-1,  0,  p);
-         Vector3D B = new Vector3D( 1,  0,  p);
-         Vector3D C = new Vector3D( 1,  0, -p);
-         Vector3D D = new Vector3D(-1,  0, -p);
+         Vector4D A = new Vector4D(-1,  0,  p);
+         Vector4D B = new Vector4D( 1,  0,  p);
+         Vector4D C = new Vector4D( 1,  0, -p);
+         Vector4D D = new Vector4D(-1,  0, -p);
 
          //XY-plane, counter-clockwise
-         Vector3D E = new Vector3D(-p, -1,  0);
-         Vector3D F = new Vector3D( p, -1,  0);
-         Vector3D G = new Vector3D( p,  1,  0);
-         Vector3D H = new Vector3D(-p,  1,  0);
+         Vector4D E = new Vector4D(-p, -1,  0);
+         Vector4D F = new Vector4D( p, -1,  0);
+         Vector4D G = new Vector4D( p,  1,  0);
+         Vector4D H = new Vector4D(-p,  1,  0);
 
          //YZ-plane, counter-clockwise
-         Vector3D I = new Vector3D( 0, -p,  1);
-         Vector3D J = new Vector3D( 0, -p, -1);
-         Vector3D K = new Vector3D( 0,  p, -1);
-         Vector3D L = new Vector3D( 0,  p,  1);
+         Vector4D I = new Vector4D( 0, -p,  1);
+         Vector4D J = new Vector4D( 0, -p, -1);
+         Vector4D K = new Vector4D( 0,  p, -1);
+         Vector4D L = new Vector4D( 0,  p,  1);
 
 
 
@@ -353,17 +391,17 @@ namespace MGL
 
 
          //5 faces of the middle layer, touching the right layer, enumerated clockwise (to match the right layer)
-         triangles.Add(new Triangle(G, F, B, c));
-         triangles.Add(new Triangle(F, J, I, c));
-         triangles.Add(new Triangle(J, D, E, c));
-         triangles.Add(new Triangle(D, K, H, c));
-         triangles.Add(new Triangle(K, G, L, c));
+         triangles.Add(new Triangle(F, G, B, c));
+         triangles.Add(new Triangle(J, F, I, c));
+         triangles.Add(new Triangle(D, J, E, c));
+         triangles.Add(new Triangle(K, D, H, c));
+         triangles.Add(new Triangle(G, K, L, c));
 
 
 
 
          Triangle T;
-         Vector3D P, Q, R, P1, Q1, R1;   //A1, B1, C1 are middle points of edges BC, CA and AB, respectively
+         Vector4D P, Q, R, P1, Q1, R1;   //A1, B1, C1 are middle points of edges BC, CA and AB, respectively
          int triangle_cnt;
 
          for( int i = 0; i < (level-1); i++ )
@@ -421,30 +459,35 @@ namespace MGL
 
          Mesh cyl_base = circle(r, c, level);
 
-         Mesh bot =                 Matrix4D.transl(0, -hei/2, 0) * cyl_base;   //bottom base of cyllinder (creates a copy of circle that is hei/2 below the original)
-         Mesh top = cyl_base.transf(Matrix4D.transl(0,  hei/2, 0));             //top base of cyllinder (doesn't waste RAM)
+         Mesh bot = Matrix4D.transl(0, -hei/2, 0) * cyl_base;   //bottom base of cyllinder (creates a copy of circle that is hei/2 below the original)
+         Mesh top = Matrix4D.transl(0,  hei/2, 0) * cyl_base;   //top    base of cyllinder (creates a copy of circle that is hei/2 above the original)
 
 
          Mesh S = new Mesh();
-         S.add(bot);
          S.add(top);
 
 
-         Vector3D A, B, C, D;
 
 
+         Vector4D A, B, C, D;
+
+         List<Triangle> bot_triangles = bot.get_triangles();
+         List<Triangle> top_triangles = top.get_triangles();
          for( int i = 0; i < bot.triangle_cnt(); i++ )
          {
-            A = bot.get_triangles()[i].getv(0);
-            B = bot.get_triangles()[i].getv(1);
-            C = top.get_triangles()[i].getv(0);
-            D = top.get_triangles()[i].getv(1);
+            A = bot_triangles[i].getv(0);
+            B = bot_triangles[i].getv(1);
+            C = top_triangles[i].getv(1);
+            D = top_triangles[i].getv(0);
 
             S.add(new Triangle(A, B, C, c));
             S.add(new Triangle(A, C, D, c));
          }
+         bot.clear();
+         bot = (Matrix4D.transl(0, -hei/2, 0) * Matrix4D.rotateX(Cmath.PI)) * cyl_base;
 
 
+         S.add(bot);
          return S;
       }
       public static Mesh cone     (double r, double hei, Color c, int level = 0)
@@ -457,21 +500,21 @@ namespace MGL
 
 
          Mesh cone_base = circle(r, c, level);
-         cone_base.transf(Matrix4D.transl(0, -hei/2, 0));
+         cone_base.transf(Matrix4D.transl(0, -hei/2, 0) * Matrix4D.rotateX(Math.PI));
 
 
          Mesh S = new Mesh();
          S.add(cone_base);
 
 
-         Vector3D A, B, C;
-         C = new Vector3D(0, hei/2, 0);
+         Vector4D A, B, C;
+         C = new Vector4D(0, hei/2, 0);
 
-
+         List<Triangle> triangles = cone_base.get_triangles();
          for( int i = 0; i < cone_base.triangle_cnt(); i++ )
          {
-            A = cone_base.get_triangles()[i].getv(0);
-            B = cone_base.get_triangles()[i].getv(1);
+            A = triangles[i].getv(1);
+            B = triangles[i].getv(0);
 
             S.add(new Triangle(A, B, C, c));
          }
@@ -487,9 +530,9 @@ namespace MGL
       #endregion
 
 
-      #region Shape operators
+      #region Mesh operators
       public static Mesh operator *(Matrix4D M, Mesh S)
-         => new Mesh( S.get_triangles().ConvertAll(Triangle => new Triangle(M * Triangle)) );
+         => new Mesh( S.get_triangles().ConvertAll(Triangle => M * Triangle) );
 
       public Mesh transf(Matrix4D _transf)
       {
@@ -516,7 +559,7 @@ namespace MGL
       #endregion
 
 
-      #region Shape properties
+      #region Mesh properties
       public Vector3D center()
       {
          Vector3D v = Vector3D.zero;
@@ -542,21 +585,21 @@ namespace MGL
          Console.WriteLine("----------------- <<<<<<<< Mesh test 1");
 
 
-         Vector3D v11 = new Vector3D(20, 50, 0);
-         Vector3D v12 = new Vector3D(0, 50, 0);
-         Vector3D v13 = new Vector3D(20, 50, 70);
+         Vector4D v11 = new Vector4D(20, 50, 0);
+         Vector4D v12 = new Vector4D(0, 50, 0);
+         Vector4D v13 = new Vector4D(20, 50, 70);
          Color c1 = Color.Red;
          Triangle T1 = new Triangle(v11, v12, v13, c1);
 
-         Vector3D v21 = new Vector3D(50, 10, 20);
-         Vector3D v22 = new Vector3D(0, 50, 30);
-         Vector3D v23 = new Vector3D(40, 50, 70);
+         Vector4D v21 = new Vector4D(50, 10, 20);
+         Vector4D v22 = new Vector4D(0, 50, 30);
+         Vector4D v23 = new Vector4D(40, 50, 70);
          Color c2 = Color.Orange;
          Triangle T2 = new Triangle(v21, v22, v23, c2);
 
-         Vector3D v31 = new Vector3D(20, 50, 0);
-         Vector3D v32 = new Vector3D(0, 50, 0);
-         Vector3D v33 = new Vector3D(20, 50, 70);
+         Vector4D v31 = new Vector4D(20, 50, 0);
+         Vector4D v32 = new Vector4D(0, 50, 0);
+         Vector4D v33 = new Vector4D(20, 50, 70);
          Color c3 = Color.Violet;
          Triangle T3 = new Triangle(v31, v32, v33, c3);
 

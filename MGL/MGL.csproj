@@ -52,7 +52,6 @@
     <Compile Include="Triangle.cs" />
     <Compile Include="Vector3D.cs" />
     <Compile Include="Vector4D.cs" />
-    <Compile Include="World.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
