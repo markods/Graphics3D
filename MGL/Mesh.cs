@@ -6,39 +6,36 @@ namespace MGL
 {
    public class Mesh
    {
-      private List<Triangle> triangles;   //shape's faces (the keyword faces doesn't sound right)
-
+      public String name;                //mesh name
+      public List<Triangle> triangles;   //mesh triangles (in other words faces)
+      public Matrix4D transf;            //initial transformation matrix
+      //forensic?
 
       #region Constructors
-      public Mesh()
+      public Mesh(String _name = "")
       {
+         name      = _name;
          triangles = new List<Triangle>();
       }
 
       //namerno je shallow-copy (nema smisla praviti novi niz trouglova od starog, pri konstrukciji shape-a)
-      public Mesh(List<Triangle> _triangles)
+      public Mesh(List<Triangle> _triangles, String _name = "" )
       {
-         //converter lambda function ( X=>Y ) must be specified for function Array<>.ConvertAll()
-         triangles = _triangles;
+         name      = _name;
+         triangles = _triangles;   //converter lambda function ( X=>Y ) must be specified for function Array<>.ConvertAll()
       }
 
       //treba deep-copy, jer je copy-konstruktor
       public Mesh(Mesh S)
       {
-         //converter lambda function ( X=>Y ) must be specified for function Array<>.ConvertAll()
-         triangles = (S.triangles).ConvertAll( Triangle => new Triangle(Triangle) );
+         name      =  S.name;
+         triangles = (S.triangles).ConvertAll( Triangle => new Triangle(Triangle) );   //converter lambda function ( X=>Y ) must be specified for function Array<>.ConvertAll()
       }
       #endregion
 
 
       #region Common 2D shapes
-      /*
-      public static Mesh equitriangle(double a, int level = 0)   //a - side length
-      {
-         return ;
-      }
-      */
-      public static Mesh rectangle(double ax, double az, Color c, int level = 0)   //ax - length, az - width
+      public static Mesh rectangle(double ax, double az, Color c, int level = 0, String name = "")   //ax - length, az - width
       {
          if( ax <= 0 || az <= 0 )
             throw new ArgumentException("Both dimensions of rectangle must be greater than zero");
@@ -48,9 +45,8 @@ namespace MGL
          level += 1;   //magical constant
 
 
-
-         Mesh S = new Mesh();
          Vector4D A, B, C, D;
+         Mesh S = new Mesh(name);
 
 
          int    edges = level;   //number of sub-rectangle edges on rectangle edge
@@ -70,12 +66,11 @@ namespace MGL
                S.add(new Triangle(A, C, D, c));
             }
 
-
+         
          return S;
       }
 
-
-      public static Mesh circle   (double r,             Color c, int level = 0)   //r - radius
+      public static Mesh circle      (double r,                Color c, int level = 0, String name = "")   //r - radius
       {
          if( r <= 0 )
             throw new ArgumentException("Radius of circle must be greater than zero");
@@ -85,8 +80,8 @@ namespace MGL
          level += 3;   //magical constant
 
 
-         Mesh S = new Mesh();
          Vector4D O, A, B;
+         Mesh S = new Mesh(name);
 
 
          int    edges = level;                //number of edges (slices) that approximate the circle
@@ -105,8 +100,7 @@ namespace MGL
 
          return S;
       }
-
-      public static Mesh hollowcircle (double rout, double rin, Color c, int level = 0)   //rout - spoljni radius, rin - unutrasnji radius
+      public static Mesh hollowcircle(double rout, double rin, Color c, int level = 0, String name = "")   //rout - outer radius, rin - innter radius
       {
          if( rout <= 0 || rin <= 0 )
             throw new ArgumentException("Radius of circle must be greater than zero");
@@ -116,8 +110,8 @@ namespace MGL
          level += 3;   //magical constant
 
 
-         Mesh S = new Mesh();
          Vector4D A, B, C, D;
+         Mesh S = new Mesh(name);
 
 
          int    edges = level;                //number of edges (slices) that approximate the circle
@@ -138,12 +132,11 @@ namespace MGL
 
          return S;
       }
-
       #endregion
 
 
       #region Common 3D shapes
-      public static Mesh quboid   (double ax, double az, double ay, Color c, int level = 0)   //ax - length, az - width, ay - height
+      public static Mesh quboid   (double ax, double az, double ay, Color c, int level = 0, String name = "")   //ax - length, az - width, ay - height
       {
          if( ax <= 0 || az <= 0 || ay <= 0 )
             throw new ArgumentException("All three dimensions of quboid must be greater than zero");
@@ -152,7 +145,7 @@ namespace MGL
 
 
 
-         Mesh S = new Mesh();
+         Mesh S = new Mesh(name);
 
 
          //vektori nomala ovih pravougaonika su u smeru trece ose (koja nije navedena u imenu) i sa centrom u koordinatnom pocetku
@@ -175,16 +168,8 @@ namespace MGL
 
          return S;
       }
-      /*
-      public static Mesh tetrahedron(double a, int level = 0)
-      {
-         return ;
-      }
-      */
 
-
-
-      public static Mesh psphere  (double r, Color c, int level = 0)   //a sphere that is made up of 8 identical pieces, having a specified number of circle slices
+      public static Mesh psphere  (double r, Color c, int level = 0, String name = "")   //a sphere that is made up of 8 identical pieces, having a specified number of circle slices
       {
          if( r <= 0 )
             throw new ArgumentException("Radius of sphere must be greater than zero");
@@ -195,9 +180,9 @@ namespace MGL
 
 
 
-         Mesh S = new Mesh();
          Vector4D A, B, C;
          double pi = Cmath.PI;
+         Mesh S = new Mesh(name);
 
 
 
@@ -253,7 +238,7 @@ namespace MGL
 
          return S;
       }
-      public static Mesh uvsphere (double r, Color c, int level = 0)   //a sphere that resembles a party globe (made up from square-ish segments)
+      public static Mesh uvsphere (double r, Color c, int level = 0, String name = "")   //a sphere that resembles a party globe (made up from square-ish segments)
       {
          if( r <= 0 )
             throw new ArgumentException("Radius of sphere must be greater than zero");
@@ -264,9 +249,10 @@ namespace MGL
 
 
 
-         Mesh S = new Mesh();
          Vector4D A, B, C, D;
          double pi = Cmath.PI;
+
+         Mesh S = new Mesh(name);
 
 
          //applies to all levels
@@ -305,7 +291,7 @@ namespace MGL
 
          return S;
       }
-      public static Mesh icosphere(double r, Color c, int level = 0)   //base shape is an icosahedron, that progressively gets its sides split in four equi-triangles
+      public static Mesh icosphere(double r, Color c, int level = 0, String name = "")   //base shape is an icosahedron, that progressively gets its sides split in four equi-triangles
       {
          if( r <= 0 )
             throw new ArgumentException("Radius of sphere must be greater than zero");
@@ -441,17 +427,18 @@ namespace MGL
          }
 
 
-         Mesh S = new Mesh(triangles);
+         Mesh S = new Mesh(triangles, name);
 
 
          return S;
       }
 
-
-      public static Mesh cyllinder(double r, double hei, Color c, int level = 0)
+      public static Mesh cyllinder(double r, double hei, Color c, int level = 0, String name = "")   //r - radius, hei - height
       {
          if( r <= 0 )
-            throw new ArgumentException("Radius of circle must be greater than zero");
+            throw new ArgumentException("Radius of base circles must be greater than zero");
+         if( hei <= 0 )
+            throw new ArgumentException("Height of cyllinder must be greater than zero");
          if( level < 0 )
             throw new ArgumentException("Level of refinement must be non-negative");
 
@@ -463,10 +450,8 @@ namespace MGL
          Mesh top = Matrix4D.transl(0,  hei/2, 0) * cyl_base;   //top    base of cyllinder (creates a copy of circle that is hei/2 above the original)
 
 
-         Mesh S = new Mesh();
+         Mesh S = new Mesh(name);
          S.add(top);
-
-
 
 
          Vector4D A, B, C, D;
@@ -490,27 +475,28 @@ namespace MGL
          S.add(bot);
          return S;
       }
-      public static Mesh cone     (double r, double hei, Color c, int level = 0)
+      public static Mesh cone     (double r, double hei, Color c, int level = 0, String name = "")   //r - radius, hei - height
       {
          if( r <= 0 )
-            throw new ArgumentException("Radius of circle must be greater than zero");
+            throw new ArgumentException("Radius of base circle must be greater than zero");
+         if( hei <= 0 )
+            throw new ArgumentException("Height of cone must be greater than zero");
          if( level < 0 )
             throw new ArgumentException("Level of refinement must be non-negative");
 
 
 
-         Mesh cone_base = circle(r, c, level);
-         cone_base.transf(Matrix4D.transl(0, -hei/2, 0) * Matrix4D.rotateX(Math.PI));
+         Mesh cone_base = Matrix4D.transl(0, -hei/2, 0) * Matrix4D.rotateX(Math.PI) * circle(r, c, level);
 
 
-         Mesh S = new Mesh();
+         Mesh S = new Mesh(name);
          S.add(cone_base);
 
 
          Vector4D A, B, C;
          C = new Vector4D(0, hei/2, 0);
 
-         List<Triangle> triangles = cone_base.get_triangles();
+         List<Triangle> triangles = cone_base.triangles;
          for( int i = 0; i < cone_base.triangle_cnt(); i++ )
          {
             A = triangles[i].getv(1);
@@ -532,15 +518,7 @@ namespace MGL
 
       #region Mesh operators
       public static Mesh operator *(Matrix4D M, Mesh S)
-         => new Mesh( S.get_triangles().ConvertAll(Triangle => M * Triangle) );
-
-      public Mesh transf(Matrix4D _transf)
-      {
-         for( int i = 0; i < triangles.Count; i++ )
-            triangles[i] = _transf * triangles[i];
-
-         return this;
-      }
+         => new Mesh( S.triangles.ConvertAll(Triangle => M * Triangle) );
 
       public void add(Triangle T)
       {
@@ -550,7 +528,7 @@ namespace MGL
       public void add(List<Triangle> L)
       { triangles.AddRange(L); }
       public void add(Mesh S)
-      { triangles.AddRange(S.get_triangles()); }
+      { triangles.AddRange(S.triangles); }
 
       public bool remove    (Triangle item)             => triangles.Remove(item);
       public int  remove_all(Predicate<Triangle> match) => triangles.RemoveAll(match);
@@ -582,7 +560,7 @@ namespace MGL
       #region Testing
       public static void test1()
       {
-         Console.WriteLine("----------------- <<<<<<<< Mesh test 1");
+         Console.WriteLine("---------------------------------------- <<<<<<<< Mesh test 1");
 
 
          Vector4D v11 = new Vector4D(20, 50, 0);
@@ -620,7 +598,7 @@ namespace MGL
          Console.WriteLine("Mesh S = {0}", S);
          Console.WriteLine("M = Matrix4D.scale(2, 3, 4) = {0}", M);
 
-         Console.WriteLine("M*S = {0}", M * S);
+         Console.WriteLine("M * S = {0}", M * S);
 
 
       }

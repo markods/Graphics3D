@@ -79,31 +79,6 @@ namespace MGL
       public double getz() => z;
       public double getw() => w;
       
-      public double this[int i]
-      {
-         get
-         {
-            switch( i )
-            {
-               case 0: return x;
-               case 1: return y;
-               case 2: return z;
-               case 3: return w;
-               default:  throw new ArgumentException("Index out of range [2]0");
-            }
-         }
-         set
-         {
-            switch( i )
-            {
-               case 0: x = value; break;
-               case 1: y = value; break;
-               case 2: z = value; break;
-               case 3: w = value; break;
-               default:  throw new ArgumentException("Index out of range [2]0");
-            }
-         }
-      }
 
       public double getnormx() => (w != 0 ? x/w : 0);
       public double getnormy() => (w != 0 ? y/w : 0);
@@ -167,7 +142,7 @@ namespace MGL
 
       public static Vector4D operator /(Vector4D u, double k  )
       {
-         if( k == 0 )
+         if( Cmath.approx(k, 0, Cmath.ulp) )
             throw new ArgumentException("Vector4D division by zero");
 
          return new Vector4D(u.x/k,   u.y/k,   u.z/k,   u.w);
@@ -180,18 +155,20 @@ namespace MGL
       
       //|i    j    k  |    - ne mora nigde da se mnozi sa u.w i v.w,
       //|u.x  u.y  u.z|      jer se implicitno desava sledece:
-      //|v.x  v.y  v.z|   1. vektorski se mnoze norm. (w = 1) vektori u i v,
+      //|v.x  v.y  v.z|   1. vektorski se mnoze normalizovani (w = 1) vektori u i v,
       //                  2. dobijeni vektor se mnozi sa koef. u.w i v.w
 
       #endregion
 
 
       #region Vector properties
-      public Vector3D scale_to(double _w)
+      public Vector4D scale_to(double _w)
       {
          if( _w == 0 )
             throw new ArgumentException("New scale base w must be non-zero");
-         
+         if( Cmath.approx(w, 0, Cmath.ulp) )
+            return null;
+
          x *= _w/w;
          y *= _w/w;
          z *= _w/w;
@@ -199,9 +176,9 @@ namespace MGL
 
          return this;
       }
-      public Vector3D scale_by(double k)
+      public Vector4D scale_by(double k)
       {
-         if( k == 0 )
+         if( Cmath.approx(k, 0, Cmath.ulp) )
             throw new ArgumentException("Scale factor must be non-zero");
          
          x *= k;
@@ -211,8 +188,13 @@ namespace MGL
 
          return this;
       }
-      public Vector3D norm()
+      
+      public Vector4D normalize()
       {
+         if( Cmath.approx(w, 0, Cmath.ulp) )
+            return this;
+         //forensic?
+         
          x /= w;
          y /= w;
          z /= w;
@@ -220,25 +202,20 @@ namespace MGL
 
          return this;
       }
-
-      public Vector4D unitize()
+      public Vector4D unitize()   //skalira vektor tako da postane jedinican (na sferi poluprecnika 1)
       {
          double l = len();
-         if( l == 0 )
-          //throw new ArgumentException("Vector4D has zero length");
+         if( Cmath.approx(l, 0, Cmath.ulp) )
             return this;
+         //forensic?
 
          x /= l;
          y /= l;
          z /= l;
-       //w /= l;
+
          return this;
       }
-
-      public static double angleXY(Vector3D u) => Cmath.arcsin(k*u / u.len());   //ugao koji vektor zaklapa sa XY-ravni, u matematickom smeru
-      public static double angleXZ(Vector3D u) => Cmath.arcsin(j*u / u.len());   //ugao koji vektor zaklapa sa XZ-ravni, u matematickom smeru
-      public static double angleYZ(Vector3D u) => Cmath.arcsin(i*u / u.len());   //ugao koji vektor zaklapa sa YZ-ravni, u matematickom smeru
-
+      
 
       public double len()      => Math.Sqrt(x*x + y*y + z*z) /  w;      //vraca duzinu vektora
       public double len_sq()   =>          (x*x + y*y + z*z) / (w*w);   //vraca kvadrat duzine vektora
@@ -254,7 +231,7 @@ namespace MGL
       #region Testing
       public static void test1()
       {
-         Console.WriteLine("----------------- <<<<<<<< Vector4D test 1");
+         Console.WriteLine("---------------------------------------- <<<<<<<< Vector4D test 1");
 
          Vector4D v1 = new Vector4D( 2, 3, 4, 0.5 );   //kreiranje vektora sa int koordinatama
          Vector4D v2 = new Vector4D( 3, 4, 5, 1   );   //                -||-
@@ -302,18 +279,16 @@ namespace MGL
          Console.WriteLine("v1.normz = {0}", v1.getnormz());   //vrednost normalizovane z koordinate
 
          Console.WriteLine();
-         Console.WriteLine("v1.norm()        = {0}", v1.norm()       );   //normalizacija pocetnog vektora
-         Console.WriteLine("v1.scale_by(2)   = {0}", v1.scale_by(2)  );   //skaliranje vektora faktorom
+         Console.WriteLine("v1.len()    = {0,-3:G4}", v1.len()   );   //duzina vektora
+         Console.WriteLine("v1.len_sq() = {0}",       v1.len_sq());   //kvadrat duzine vektora
+
+         Console.WriteLine();
+         Console.WriteLine("v1.normalize()   = {0}", v1.normalize()  );   //normalizacija pocetnog vektora
+         Console.WriteLine("v1.unitize()     = {0}", v1.unitize()    );   //unitizacija pocetnog vektora
+
+         Console.WriteLine();
          Console.WriteLine("v1.scale_to(0.5) = {0}", v1.scale_to(0.5));   //skaliranje vektora na odredjenu velicinu
-
-         Console.WriteLine();
-         Console.WriteLine("angleXY(v1) = {0}", angleXY(v1));   //ugao vektora sa XY-ravni
-         Console.WriteLine("angleXZ(v1) = {0}", angleXZ(v1));   //ugao vektora sa XZ-ravni
-         Console.WriteLine("angleYZ(v1) = {0}", angleYZ(v1));   //ugao vektora sa YZ-ravni
-
-         Console.WriteLine();
-         Console.WriteLine("v1.len()    = {0,3:G4}", v1.len()   );   //duzina vektora
-         Console.WriteLine("v1.len_sq() = {0}",      v1.len_sq());   //kvadrat duzine vektora
+         Console.WriteLine("v1.scale_by(2)   = {0}", v1.scale_by(2)  );   //skaliranje vektora faktorom
 
 
 
@@ -326,7 +301,7 @@ namespace MGL
          Console.WriteLine("random vektor = {0}", v3);
          Console.WriteLine("random vektor = {0}", v3.write_all());
          Console.WriteLine("i+j+k = {0}", v4);
-         Console.WriteLine("vnull = {0}", v5);
+         Console.WriteLine("zero  = {0}", v5);
 
 
 

@@ -103,7 +103,7 @@ namespace MGL
 
       public static Vector3D operator /(Vector3D u, double k  )
       {
-         if( k == 0 )
+         if( Cmath.approx(k, 0, Cmath.ulp) )
             throw new ArgumentException("Vector3D division by zero");
          
          return new Vector3D(u.x/k,   u.y/k,   u.z/k);
@@ -120,9 +120,19 @@ namespace MGL
 
 
       #region Vector properties
-      public static double angleXY(Vector3D u) => Cmath.arcsin(k*u / u.len());   //ugao koji vektor zaklapa sa XY-ravni, u matematickom smeru
-      public static double angleXZ(Vector3D u) => Cmath.arcsin(j*u / u.len());   //ugao koji vektor zaklapa sa XZ-ravni, u matematickom smeru
-      public static double angleYZ(Vector3D u) => Cmath.arcsin(i*u / u.len());   //ugao koji vektor zaklapa sa YZ-ravni, u matematickom smeru
+      public Vector3D unitize()   //skalira vektor tako da postane jedinican (na sferi poluprecnika 1)
+      {
+         double l = len();
+         if( Cmath.approx(l, 0, Cmath.ulp) )
+            return this;
+         //forensic?
+
+         x /= l;
+         y /= l;
+         z /= l;
+
+         return this;
+      }
 
 
       public double len()      => Math.Sqrt(x*x + y*y + z*z);   //vraca duzinu vektora
@@ -139,7 +149,7 @@ namespace MGL
       #region Testing
       public static void test1()
       {
-         Console.WriteLine("----------------- <<<<<<<< Vector3D test 1");
+         Console.WriteLine("---------------------------------------- <<<<<<<< Vector3D test 1");
 
          Vector3D v1 = new Vector3D( 2, 3, 4 );   //kreiranje vektora sa int koordinatama
          Vector3D v2 = new Vector3D( 3, 4, 5 );   //                -||-
@@ -175,14 +185,12 @@ namespace MGL
          Console.WriteLine("v1.z = {0}", v1.getz());   //vrednost z koordinate
 
          Console.WriteLine();
-         Console.WriteLine("angleXY(v1) = {0}", angleXY(v1));   //ugao vektora sa XY-ravni
-         Console.WriteLine("angleXZ(v1) = {0}", angleXZ(v1));   //ugao vektora sa XZ-ravni
-         Console.WriteLine("angleYZ(v1) = {0}", angleYZ(v1));   //ugao vektora sa YZ-ravni
+         Console.WriteLine("v1.len()    = {0,-3:G4}", v1.len()        );   //duzina vektora
+         Console.WriteLine("v1.len_sq() = {0}",       v1.len_sq()     );   //kvadrat duzine vektora
 
          Console.WriteLine();
-         Console.WriteLine("v1.len()    = {0,3:G4}", v1.len()        );   //duzina vektora
-         Console.WriteLine("v1.len_sq() = {0}",      v1.len_sq()     );   //kvadrat duzine vektora
-
+         Console.WriteLine("v1.unitize() = {0}", v1.unitize());   //unitizacija pocetnog vektora
+         
 
 
          Console.WriteLine("----------------");
@@ -194,7 +202,7 @@ namespace MGL
          Console.WriteLine("random vektor = {0}", v3);
          Console.WriteLine("random vektor = {0}", v3.write_all());
          Console.WriteLine("i+j+k = {0}", v4);
-         Console.WriteLine("vnull = {0}", v5);
+         Console.WriteLine("zero  = {0}", v5);
 
 
 

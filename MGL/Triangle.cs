@@ -73,11 +73,11 @@ namespace MGL
       #region Triangle properties
       public Vector4D center() => (vertex[0] + vertex[1] + vertex[2]) / 3;
 
-      public Triangle norm()
+      public Triangle normalize()
       {
-         vertex[0].norm();
-         vertex[1].norm();
-         vertex[2].norm();
+         vertex[0].normalize();
+         vertex[1].normalize();
+         vertex[2].normalize();
          return this;
       }
       #endregion
@@ -96,7 +96,7 @@ namespace MGL
       #region Testing
       public static void test1()
       {
-         Console.WriteLine("----------------- <<<<<<<< Triangle test 1");
+         Console.WriteLine("---------------------------------------- <<<<<<<< Triangle test 1");
 
          Vector4D v1 = new Vector4D(1, 2, 3);
          Vector4D v2 = new Vector4D(4, 5, 6);
@@ -106,16 +106,16 @@ namespace MGL
          Triangle T = new Triangle(v1, v2, v3, c);
 
 
-         Console.WriteLine("Triangle T    = {0}", T            );
+         Console.WriteLine("Triangle T = {0}",    T            );
          Console.WriteLine("T.write_all() = {0}", T.write_all());
 
 
          Console.WriteLine("----------------");
 
-         Console.WriteLine("T.getv(0) = {0}", T.getv(0));
-         Console.WriteLine("T.getv(1) = {0}", T.getv(1));
-         Console.WriteLine("T.getv(2) = {0}", T.getv(2));
-         Console.WriteLine("T.get_color() = {0}", T.get_color()  );
+         Console.WriteLine("T.getv(0) = {0}",     T.getv(0)    );
+         Console.WriteLine("T.getv(1) = {0}",     T.getv(1)    );
+         Console.WriteLine("T.getv(2) = {0}",     T.getv(2)    );
+         Console.WriteLine("T.get_color() = {0}", T.get_color());
 
 
          Console.WriteLine("----------------");
@@ -124,7 +124,7 @@ namespace MGL
          Console.WriteLine("Triangle T = {0}", T);
          Console.WriteLine("M = Matrix4D.scale(2, 3, 4) = {0}", M);
 
-         Console.WriteLine("M*T = {0}", M*T);
+         Console.WriteLine("M * T = {0}", M*T);
       }
       #endregion
 

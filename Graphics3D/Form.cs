@@ -3,24 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Runtime.CompilerServices;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using System.Drawing.Imaging; //zbog BitmapData
-
-/*
-public class GDI
-{
-    [System.Runtime.InteropServices.DllImport("gdi32.dll")]
-    internal static extern bool SetPixel(IntPtr hdc, int X, int Y, uint crColor);
-}
-*/
-
+using System.Drawing.Imaging;   //zbog BitmapData
 
 
 public struct ColorARGB
 {
-    public byte B, G, R, A;
+    public byte B, G, R, A;   //ne menjati redosled!!!
 
     public ColorARGB(Color color)
     {
@@ -61,15 +50,15 @@ namespace Graphics3D
    {
       private static int refresh_cnt = 0;
 
-      //Globalne promenljive za crtanje
+      //globalne promenljive za crtanje
       private Bitmap bitmap;            //graficki bafer koji se prosledjuje PictureBox-u
       private bool crate_new_bitmap;    //da li treba menjati dimenzije grafickog bafera
       private double[][] zbuf;          //Z-buffer
 
       private int draw_wid, draw_hei;   //prostor u PictureBox-u za crtanje
-      List<Mesh> scene;                 //skup svih shape-ova na sceni
+      List<Mesh> scene;                 //skup svih mesh-ova na sceni
 
-      double Zvp;    //Z koordinata VP (viewporta) u koordinatnom sistemu posmatraca
+      double Zvp;    //Z koordinata VP  (viewporta) u koordinatnom sistemu posmatraca
       double Zncp;   //Z koordinata NCP (near clipping plane) u koordinatnom sistemu posmatraca
       double Zfcp;   //Z koordinata FCP (far clipping plane) u koordinatnom sistemu posmatraca
       double Xrcp;   //X koordinata RCP (right clipping plane) u koordinatnom sistemu posmatraca
@@ -79,30 +68,69 @@ namespace Graphics3D
       Matrix4D pp;   //perspective projection matrix
       Matrix4D vt;   //viewport transformation matrix
 
+      //moze jer je aplikacija single-threaded
       SolidBrush brush;
       Pen        pen;
       Point[] trianglepoints;
-
-      bool draw_clipped_xy;
-      bool draw_wireframe;
-      bool draw_surfaces;
-      bool draw_normals;
 
       const int front_side =  1;
       const int both_sides =  0;
       const int back_side  = -1;
 
-      int depth_algorithm;
+      bool clip_x;
+      bool clip_y;
+
+      bool draw_normals;
+      bool EkvidistantneOrbitale;
+      bool Resized;  //da li su tela preuvelicana
+      bool Orbiting; //da li tela treba da rotiraju oko Sunca
+      int scene_num;
+      const int scene_cnt          = 5;
+
+      int time_mode;
+      const int time_manual        = 0;
+      const int time_auto          = 1;
+      const int time_mode_cnt      = 2;
+
+      int surface_mode;
+      const int no_surface         = 0;
+      const int back_surface       = 1;
+      const int both_surfaces      = 2;
+      const int front_surface      = 3;
+      const int surface_mode_cnt   = 4;
+
+      int wireframe_mode;
+      const int no_wireframe       = 0;
+      const int back_wireframe     = 1;
+      const int both_wireframes    = 2;
+      const int front_wireframe    = 3;
+      const int wireframe_mode_cnt = 4;
+
+      int depth_mode;
       const int depth_unordered     = 0;
       const int depth_back2front    = 1;
       const int depth_zbuf          = 2;
-      const int depth_algorithm_cnt = 3;
+      const int depth_mode_cnt      = 3;
 
+      int shading_mode;
+      const int no_shading          = 0;
+      const int flat1_shading       = 1;
+      const int flat2_shading       = 2;
+      const int shading_mode_cnt    = 3;
 
-      //===================Testing=====================
-      Mesh mesh1;
-      Mesh mesh2;
-      Mesh mesh3;
+      int background_mode;
+      const int no_background       = 0;
+      const int background_grid     = 1;
+      const int background_all      = 2;
+      const int background_lines    = 3;
+      const int background_mode_cnt = 4;
+
+      const double FaktorOrbitalnogSazimanja    = 100;  //faktor skaliranja orbita (toliko puta su tela bliza Suncu nego u stvarnosti)
+      const double FaktorOrbitalnogUbrzanja     = 10;   //faktor ubrzanja vremena rotacije oko Sunca (toliko puta ce se tela brze vrteti oko Sunca nego u stvarnosti)
+      const double FaktorSazimanjaSunca         = 1;    //faktor skaliranja poluprecnika Sunca (toliko puta ce Sunce biti manje uvećano u odnosu na druge planete)
+      const double SimulPoluprecnikZemlje       = 5;    //broj jedinica u simuliranom sistemu koji predstavlja poluprecnik Zemlje
+      const double SimulPoluprecnikOrbiteZemlje = SimulPoluprecnikZemlje * 149597890/6378 / FaktorOrbitalnogSazimanja; 
+
       private int detail;        //level of detail (useful for spheres, etc.)
 
 
@@ -115,6 +143,9 @@ namespace Graphics3D
       private double rady_inc;   //increment ugla rady
       private double radz_inc;   //increment ugla radz
 
+      private double Tsim;       //simulirano vreme
+      private double Tsim_orb;   //simulirano vreme za kretanje po orbiti (da bi se moglo pauzirati)
+      private double Tsim_inc;   //inkrement simuliranog vremena
 
 
       public Form()
@@ -126,7 +157,7 @@ namespace Graphics3D
          crate_new_bitmap = true;
 
          scene  = new List<Mesh>();
-         detail = 1;
+         detail = 2;
          UpdateModels();
 
          radx = 0;
@@ -137,12 +168,16 @@ namespace Graphics3D
          rady_inc  = 2*Math.PI/100;
          radz_inc  = 2*Math.PI/100;
 
+         Tsim      = 0;
+         Tsim_orb  = 0;
+         Tsim_inc  = 2*Math.PI/365/24; //inkrementira se za 1 sat
+
 
          //===================Testing=====================
          Zvp  = -200;                      //-200 znaci da se viewport nalazi na udaljenosti 200 od posmatraca
 
          Zncp = -5;                        //ako je Zncp = Zvp to znaci da se clipping radi na viewportu, a vrednosti Zncp treba da budu negativne
-         Zfcp = -1000;                     //ako je Zncp = Zvp to znaci da se clipping radi na viewportu, a vrednosti Zncp treba da budu negativne
+         Zfcp = -100000;                   //far clipping plane
 
          double phi = (1+Math.Sqrt(5))/2;
          Xrcp =  200 * phi;
@@ -153,12 +188,19 @@ namespace Graphics3D
          pp = Matrix4D.projXY(Zvp);        //perspective projection matrix
          vt = Matrix4D.transl(0, 0, Zvp);  //viewport transformation matrix
 
-         draw_clipped_xy = true;
-         draw_wireframe = true;
-         draw_surfaces = true;
-         draw_normals = false;
-
-         depth_algorithm = depth_back2front;
+         clip_x = true;
+         clip_y = true;
+         scene_num             = 0;
+         draw_normals          = false;
+         EkvidistantneOrbitale = false;
+         Resized               = false;
+         Orbiting              = false;
+         time_mode             = time_manual;
+         wireframe_mode        = both_wireframes;
+         surface_mode          = both_surfaces;
+         depth_mode            = depth_back2front;
+         shading_mode          = flat1_shading;
+         background_mode       = background_all;
 
          brush = new SolidBrush(Color.Empty);
          pen   = new Pen(Color.Empty, 1);
@@ -202,6 +244,9 @@ namespace Graphics3D
 
       private Vector4D Intersect( Vector4D v1, Vector4D v2, Vector4D N, Vector4D L )  
       {
+         if( (v2 - v1)*N == 0 )
+            return (v1 + v2) / 2;  //debug!!!!!!!!!
+
          //returns intersection point of line (between v1 and V2) through plane (N = normal to plane, L = point which belongs to plane)
          return v1 + ((L - v1)*N) / ((v2 - v1)*N) * (v2 - v1);
       }
@@ -274,7 +319,7 @@ namespace Graphics3D
             int endx = 0;
             int inc = (Lx <= Rx ? 1 : -1);  //kad se rasterizacija horizontalne linije vrsi u pravcu od L ka R treba koristiti sledeci inkrement (jer se ne garantuje da je L levo a R desno)
 
-          //Color color = Color.Red;
+            Color color = Color.Transparent; // boja kojom ce se tacka iscrtati
             Vector4D Z; //z dubina tacke koja se iscrtava
             Vector4D N = Vector4D.vect_mult( T.getv(1) - T.getv(0), T.getv(2) - T.getv(0) ).unitize(); //normala na trougao koji se iscrtava
 
@@ -304,7 +349,7 @@ namespace Graphics3D
                }
 
                //iscrtavanje horizontalne linije u zadatim granicama
-               for( int x = (int) begx;   (x - endx) * inc <= 0;   x += inc )
+               for( int x = (int) begx;  (x - endx) * inc <= 0;  x += inc )
                {
                   Px =  draw_wid/2 + x;
                   Py =  draw_hei/2 - y;
@@ -313,14 +358,26 @@ namespace Graphics3D
                   {
                      // tacno izracunavanje Z dubine tacke
                      Z = Intersect( Vector4D.zero, new Vector4D( x, y, Zvp ), N, T.center() );
+                     
+                     // tacku treba iscrtati ako je bliza posmatracu od one koja je vec nacrtana u tom pikselu
                      if( Z.getz() > zbuf[Py][Px] )
                      {
                         zbuf[Py][Px] = Z.getz();
 
-                      //SetPixel je spora funkcija, umesto nje koristi se pointerski pristup bitmapi
-                      //bitmap.SetPixel( draw_wid/2 + x, draw_hei/2 - y, color );
+                        
+                        if( shading_mode == flat1_shading )
+                           //boja trougla ce biti zatamnjenija sto je tuplji ugao pod kojim je posmatrac vidi povrsinu trougla u toj tacki
+                           //tj. bice prikazana neizmenjena ukoliko posmatrac gleda tu tacku trougla pod pravim uglom 
+                           color = Brighten( c, 0.75 * (1 - Z.unitize() * N.unitize()) );
+                        else if( shading_mode == flat2_shading )
+                           color = Brighten( c, 0.75 * Math.Pow( 1 - Z.unitize() * N.unitize(), 1.5) );
+                        else //if( shading_mode == no_shading )
+                           color = c;  //ako se ne radi shading, svaka tacka trougla je iste boje
+
+
+                      //bitmap.SetPixel( draw_wid/2 + x, draw_hei/2 - y, color );   //SetPixel je spora funkcija, umesto nje koristi se pointerski pristup bitmapi
                         position = start_position + Px + Py * draw_wid;
-                        position->SetColor( c );
+                        position->SetColor( color );
                      }
                   }
                }
@@ -470,22 +527,15 @@ namespace Graphics3D
       {
          //trougao T dat u koordinatnom sistemu posmatraca, ali na njega nije primenjena projekcija perspektive
 
+         //strana na koju je orijentisan trougao u odnosu na posmatraca (side = -1 ako posmatrac vidi spoljnu stranu trougla, side = 1 ako posmatrac vidi unutrasnju stranu trougla, side = 0 ako ne vidi ni jednu)
+         double side = Math.Sign( T.center() * Vector4D.vect_mult( T.getv(1) - T.getv(0), T.getv(2) - T.getv(0) ) );
+
          //ne iscrtava se trougao sa zadnje strane objekta (trougao koji je orijetisan na istu stranu na koju gleda posmatrac)
-         if( (T.center() * Vector4D.vect_mult( T.getv(1) - T.getv(0), T.getv(2) - T.getv(0) )) * DrawSide > 0 )
+         if( side * DrawSide > 0 )
             return;
 
          Vector4D vertex;
          Triangle Tpp;    //trougao nakon projektovanja na viewport
-
-         pen.Color = T.get_color();
-         brush.Color = Color.LightGray;
-
-
-
-         //trougao sa zadnje strane objekta
-         //trougao koji je orijetisan na istu stranu na koju gleda posmatrac 
-         if( T.center() * Vector4D.vect_mult( T.getv(1) - T.getv(0), T.getv(2) - T.getv(0) ) >= 0 )
-            pen.Color = Color.Gray;
 
 
 
@@ -493,12 +543,15 @@ namespace Graphics3D
          if( ! ClipTriangle(g, ref T,   Vector4D.k, Zncp * Vector4D.k, DrawSide) ) return;
          if( ! ClipTriangle(g, ref T, - Vector4D.k, Zfcp * Vector4D.k, DrawSide) ) return;
 
-         if( draw_clipped_xy )
+         if( clip_x )
          {
             // clipping po levoj i desnoj viewport ravni
             if( ! ClipTriangle(g, ref T,   Vector4D.vect_mult( new Vector4D( Xrcp, Ybcp, Zvp), new Vector4D( Xrcp, Ytcp, Zvp) ), Vector4D.zero, DrawSide) ) return;
             if( ! ClipTriangle(g, ref T,   Vector4D.vect_mult( new Vector4D( Xlcp, Ytcp, Zvp), new Vector4D( Xlcp, Ybcp, Zvp) ), Vector4D.zero, DrawSide) ) return;
-
+         }
+         
+         if( clip_y )
+         {
             // clipping po gornjoj i donjoj viewport ravni
             if( ! ClipTriangle(g, ref T,   Vector4D.vect_mult( new Vector4D( Xrcp, Ytcp, Zvp), new Vector4D( Xlcp, Ytcp, Zvp) ), Vector4D.zero, DrawSide) ) return;
             if( ! ClipTriangle(g, ref T,   Vector4D.vect_mult( new Vector4D( Xlcp, Ybcp, Zvp), new Vector4D( Xrcp, Ybcp, Zvp) ), Vector4D.zero, DrawSide) ) return;
@@ -506,7 +559,7 @@ namespace Graphics3D
 
          //projekcija perspektive se radi nakon Near Plane Clipping-a
          Tpp = pp * T;
-         Tpp.norm();
+         Tpp.normalize();
 
 
          for( int k = 0; k < Triangle.ver_cnt; k++ )
@@ -515,26 +568,44 @@ namespace Graphics3D
             trianglepoints[k].X = (int) vertex.getnormx();
             trianglepoints[k].Y = (int) vertex.getnormy();
          }
+
+       //pen.Color = T.get_color();
+       //brush.Color = Color.Transparent;
+
          
 
-         if( draw_surfaces )
+         if(    (surface_mode == front_surface && side <= 0)
+             || (surface_mode == back_surface  && side >= 0)
+             ||  surface_mode == both_surfaces )
          {
-            Color c = (DrawSide > 0 ? Brighten(T.get_color(), 0.5) /* Color.LightGray */ : Color.DarkGray);
-
-            if( depth_algorithm == depth_zbuf )
+            if( depth_mode == depth_zbuf )
+            {
+               Color c = (side < 0 ? Brighten(T.get_color(), 0.5) : Color.Indigo);
                RasterizeTriangle( g, Tpp, T, c );
+            }
             else
             {
-               if (depth_algorithm == depth_back2front )
-                  brush.Color = (DrawSide > 0 ? Color.DarkGray : Color.Indigo);
+               if (depth_mode == depth_back2front )
+                  brush.Color = (side < 0 ? Brighten(T.get_color(), 0.5) : Color.Indigo);
                else
-                  brush.Color = Color.LightGray;
+                  brush.Color = (side < 0 ? Color.Yellow : Color.Indigo);
 
                g.FillPolygon( brush, trianglepoints );
             }
          }
 
-         if( draw_wireframe )
+
+
+         
+         if( side > 0 )
+            pen.Color = Color.DarkGray;  //posmatrac gleda u unutrasnju stranu trougla
+         else 
+            pen.Color = T.get_color();   //posmatrac gleda u spoljnu stranu trougla
+
+
+         if(    (wireframe_mode == front_wireframe && side <= 0 )
+             || (wireframe_mode == back_wireframe  && side >= 0 )
+             ||  wireframe_mode == both_wireframes )
          {
             g.DrawPolygon( pen, trianglepoints );
          }
@@ -549,6 +620,7 @@ namespace Graphics3D
          }
 
 
+
       }
 
 
@@ -559,14 +631,14 @@ namespace Graphics3D
          if( S == null )   return;
          if( M == null )   M = Matrix4D.I;
 
-         List<Triangle> triangles = S.get_triangles();
-         if(    depth_algorithm == depth_unordered )
+         List<Triangle> triangles = S.triangles;
+         if(    depth_mode == depth_unordered )
          {
             for( int i = 0; i < S.triangle_cnt(); i++ )
                DrawTriangle( g, M * triangles[i],  both_sides );  //applies shape transformations to each triangle of the specific shape
          }
-         else if(    depth_algorithm == depth_back2front 
-                  || depth_algorithm == depth_zbuf )
+         else if(    depth_mode == depth_back2front 
+                  || depth_mode == depth_zbuf )
          {
             for( int i = 0; i < S.triangle_cnt(); i++ )
                DrawTriangle( g, M * triangles[i], back_side  );  //applies shape transformations to each triangle of the specific shape, and draw only back-side triangles
@@ -578,35 +650,116 @@ namespace Graphics3D
 
       private void UpdateModels()
       {
-         //===================Testing=====================
-       //mesh1 = null;
-       //mesh1 = Mesh.circle      (  50,           Color.Orange, 3 * detail  );
-         mesh1 = Mesh.hollowcircle( 120,  70,      Color.Orange, 3 * detail  );
-       //mesh1 = Mesh.rectangle   ( 100, 100,      Color.Orange,     detail  );
-       //mesh1 = Mesh.psphere     ( 50,            Color.Orange,     detail  );
-       //mesh1 = Mesh.quboid      ( 100, 100, 100, Color.Orange,     detail  );
-       //mesh1 = Mesh.uvsphere    ( 100,           Color.Orange,     detail  );
-       //mesh1 = Mesh.icosphere   ( 100,           Color.Orange,     detail  );
-       //mesh1 = Mesh.cyllinder   ( 50,  100,      Color.Orange,     detail  );
-                                  
-       //mesh2 = null;            
-       //mesh2 = Mesh.quboid      ( 100, 100, 100, Color.Red,        detail  );
-       //mesh2 = Mesh.psphere     ( 100,           Color.Red,        detail  );
-       //mesh2 = Mesh.uvsphere    ( 100,           Color.Red,        detail  );
-       //mesh2 = Mesh.icosphere   ( 100,           Color.Red,        detail  );
-       //mesh2 = Mesh.cyllinder   (  50, 100,      Color.Red,        detail  );
-         mesh2 = Mesh.cone        (  50, 100,      Color.Red,        detail  );
-                                  
-       //mesh3 = null;
-       //mesh3 = Mesh.icosphere   ( 100,           Color.Magenta,    detail  );
-       //mesh3 = Mesh.psphere     ( 100,           Color.Magenta,    detail  );
-         mesh3 = Mesh.uvsphere    (  50,           Color.Magenta,    detail  );
+         scene.Clear();
 
-         if( mesh1 != null ) Console.WriteLine("Mesh1 triangle count: {0}", mesh1.triangle_cnt());
-         if( mesh2 != null ) Console.WriteLine("Mesh2 triangle count: {0}", mesh2.triangle_cnt());
-         if( mesh3 != null ) Console.WriteLine("Mesh3 triangle count: {0}", mesh3.triangle_cnt());
+         switch( scene_num )
+         {
+            case 0:
+               scene.Add( Mesh.quboid      ( 100, 100, 100, Color.Orange,     detail, "kocka" ) );
+               break;
+
+            case 1:
+               scene.Add( Mesh.circle      (  30,           Color.Orange, 5 * detail,   "circle"        ) );
+               scene.Add( Mesh.psphere     (  30,           Color.Magenta,    detail,   "psphere"       ) );
+               scene.Add( Mesh.hollowcircle(  30,  15,      Color.Red,    5 * detail,   "hollowcircle"  ) );
+               scene.Add( Mesh.quboid      (  45,  45,  45, Color.Cyan,       detail,   "quboid"        ) );
+               scene.Add( Mesh.uvsphere    (  30,           Color.Green,      detail,   "uvsphere"      ) );
+               scene.Add( Mesh.rectangle   (  30,  30,      Color.Blue,   3 * detail,   "rectangle"     ) );
+               scene.Add( Mesh.icosphere   (  30,           Color.Gray,       detail/3, "icosphere"     ) );
+               scene.Add( Mesh.cyllinder   (  15,  30,      Color.Brown,  3 * detail,   "cyllinder"     ) );
+               break;
+
+            case 2:
+               scene.Add( Mesh.cone        (  75, 150,      Color.Red,    3 * detail,   "kupa1" ) );
+               scene.Add( Mesh.cone        (  50, 200,      Color.Blue,   3 * detail,   "kupa2" ) );
+               break;
+
+            case 3:
+               scene.Add( Mesh.uvsphere    (  50,           Color.Magenta,    detail,   "Saturn" ) );
+               scene.Add( Mesh.hollowcircle( 120,  70,      Color.Orange, 3 * detail,   "Saturnovi prstenovi" ) );
+               scene.Add( Mesh.cone        (  50, 100,      Color.Red,        detail,   "svemirski brod" ) );
+               break;
+
+            case 4:
+               scene.Add( Mesh.uvsphere    (                                                         109.125 * SimulPoluprecnikZemlje / FaktorSazimanjaSunca,  Color.Yellow,       10 * detail,   "Sunce"               ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ?                              25  : 1) *        0.382 * SimulPoluprecnikZemlje,                         Color.DarkOrange,    3 * detail,   "Merkur"              ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ?                              25  : 1) *        0.949 * SimulPoluprecnikZemlje,                         Color.Red,           5 * detail,   "Venera"              ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ?                              25  : 1) *        1.000 * SimulPoluprecnikZemlje,                         Color.Blue,          5 * detail,   "Zemlja"              ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ?                              25  : 1) *        0.273 * SimulPoluprecnikZemlje,                         Color.Gray,          2 * detail,   "Mesec"               ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ?                              25  : 1) *        0.530 * SimulPoluprecnikZemlje,                         Color.Brown,         4 * detail,   "Mars"                ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ? (EkvidistantneOrbitale ? 5 : 25) : 1) *       11.200 * SimulPoluprecnikZemlje,                         Color.OrangeRed,     9 * detail,   "Jupiter"             ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ? (EkvidistantneOrbitale ? 5 : 25) : 1) *        9.410 * SimulPoluprecnikZemlje,                         Color.Orange,        9 * detail,   "Saturn"              ) );
+               scene.Add( Mesh.hollowcircle( (Resized ? (EkvidistantneOrbitale ? 5 : 25) : 1) * 2.00 * 9.410 * SimulPoluprecnikZemlje, 
+                                             (Resized ? (EkvidistantneOrbitale ? 5 : 25) : 1) * 1.35 * 9.410 * SimulPoluprecnikZemlje,                         Color.Orange,        9 * detail,   "Saturnovi prstenovi" ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ? (EkvidistantneOrbitale ? 5 : 25) : 1) *        3.980 * SimulPoluprecnikZemlje,                         Color.Cyan,          7 * detail,   "Uran"                ) );
+               scene.Add( Mesh.uvsphere    ( (Resized ? (EkvidistantneOrbitale ? 5 : 25) : 1) *        3.810 * SimulPoluprecnikZemlje,                         Color.DarkCyan,      7 * detail,   "Neptun"              ) );
+               break;
+         }
+            
+         for( int i = 0; i < scene.Count; i++ )
+            Console.WriteLine("Mesh '{0}' triangle count: {1}", scene[i].name, scene[i].triangle_cnt());
+
+         UpdatePositions();
       }
 
+
+
+      private void UpdatePositions()
+      {
+         switch( scene_num )
+         {
+            case 0:
+               for( int i = 0; i < scene.Count; i++ )
+                  if( scene[i].name == "kocka" )                    scene[i].transf = Matrix4D.rotateZ( Cmath.PI / 2 - radz ) * Matrix4D.rotateY( Cmath.PI / 2 - radx ) * Matrix4D.rotateX( Cmath.PI / 2 - radx );
+                  else                                              scene[i].transf = Matrix4D.I;
+               break;
+
+            case 1:
+               for( int i = 0; i < scene.Count; i++ )
+                  if(      scene[i].name == "circle"       )        scene[i].transf = Matrix4D.rotate( radx, 0, 0 ) * Matrix4D.rotate( 0, 0 * Math.PI/4, 0 ) * Matrix4D.transl( 100, 0, 0 ) * Matrix4D.rotate( Math.PI/6, 0, 0 );
+                  else if( scene[i].name == "psphere"      )        scene[i].transf = Matrix4D.rotate( radx, 0, 0 ) * Matrix4D.rotate( 0, 1 * Math.PI/4, 0 ) * Matrix4D.transl( 100, 0, 0 );
+                  else if( scene[i].name == "hollowcircle" )        scene[i].transf = Matrix4D.rotate( radx, 0, 0 ) * Matrix4D.rotate( 0, 2 * Math.PI/4, 0 ) * Matrix4D.transl( 100, 0, 0 ) * Matrix4D.rotate( Math.PI/6, 0, 0 );
+                  else if( scene[i].name == "quboid"       )        scene[i].transf = Matrix4D.rotate( radx, 0, 0 ) * Matrix4D.rotate( 0, 3 * Math.PI/4, 0 ) * Matrix4D.transl( 100, 0, 0 );
+                  else if( scene[i].name == "uvsphere"     )        scene[i].transf = Matrix4D.rotate( radx, 0, 0 ) * Matrix4D.rotate( 0, 4 * Math.PI/4, 0 ) * Matrix4D.transl( 100, 0, 0 );
+                  else if( scene[i].name == "rectangle"    )        scene[i].transf = Matrix4D.rotate( radx, 0, 0 ) * Matrix4D.rotate( 0, 5 * Math.PI/4, 0 ) * Matrix4D.transl( 100, 0, 0 ) * Matrix4D.rotate( Math.PI/6, 0, 0 );
+                  else if( scene[i].name == "icosphere"    )        scene[i].transf = Matrix4D.rotate( radx, 0, 0 ) * Matrix4D.rotate( 0, 6 * Math.PI/4, 0 ) * Matrix4D.transl( 100, 0, 0 );
+                  else if( scene[i].name == "cyllinder"    )        scene[i].transf = Matrix4D.rotate( radx, 0, 0 ) * Matrix4D.rotate( 0, 7 * Math.PI/4, 0 ) * Matrix4D.transl( 100, 0, 0 );
+                  else                                              scene[i].transf = Matrix4D.I;
+               break;
+
+            case 2:
+               for( int i = 0; i < scene.Count; i++ )
+                  if(      scene[i].name == "kupa1" )               scene[i].transf = Matrix4D.rotate( 0, 0, Math.PI/4 ) * Matrix4D.transl( 0, -150 * Math.Cos(radx), 0 );
+                  else if( scene[i].name == "kupa2" )               scene[i].transf =                                      Matrix4D.transl( 0,  100 * Math.Cos(radx), 0 ) * Matrix4D.rotate( Math.PI, 0, 0 );
+                  else                                              scene[i].transf = Matrix4D.I;
+               break;
+
+            case 3:
+               for( int i = 0; i < scene.Count; i++ )
+                  if(      scene[i].name == "Saturn"
+                        || scene[i].name == "Saturnovi prstenovi" ) scene[i].transf = Matrix4D.rotate( Math.PI/12, rady, 0 ) * Matrix4D.transl( 150, 0, 0 );
+                  else if( scene[i].name == "svemirski brod" )      scene[i].transf = Matrix4D.transl( 0, 150 * Math.Sin(radx), 0 ) * Matrix4D.rotate ( radx, 0, radz );
+                  else                                              scene[i].transf = Matrix4D.I;
+               break;
+
+            case 4:
+               for( int i = 0; i < scene.Count; i++ )                               // rotacija oko Sunca                                                      udaljenost od Sunca                                                                            nagib sopstvene ose rotacije na ekliptiku      rotacija oko sopstvene ose                  
+                  if(      scene[i].name == "Sunce"               ) scene[i].transf = Matrix4D.rotate( 0,                0      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   0 :  0.00) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(    7.25/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/  25.38, 0 );
+                  else if( scene[i].name == "Merkur"              ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/  0.241      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   1 :  0.38) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(    0.00/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/  58.64, 0 );
+                  else if( scene[i].name == "Venera"              ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/  0.615      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   2 :  0.72) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(  177.30/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/-243.02, 0 );
+                  else if( scene[i].name == "Zemlja"              ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/  1.000      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   3 :  1.00) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(   23.44/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/   1.00, 0 );
+                  else if( scene[i].name == "Mesec"               ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/  1.000      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   3 :  1.00) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(   23.44/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/   1.00, 0 )
+                                                                                    * Matrix4D.rotate( 0, Tsim    / (365/27.32) * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl(       (EkvidistantneOrbitale ? 120 : 60.00) * SimulPoluprecnikZemlje, 0, 0 ) * Matrix4D.rotate(    0.00/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/  27.32, 0 );
+                  else if( scene[i].name == "Mars"                ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/  1.881      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   4 :  1.52) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(   25.19/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/   1.03, 0 );
+                  else if( scene[i].name == "Jupiter"             ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/ 11.863      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   5 :  5.20) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(    3.12/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/   0.41, 0 );
+                  else if( scene[i].name == "Saturn"              ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/ 29.447      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   6 :  9.54) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(   26.73/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/   0.44, 0 );
+                  else if( scene[i].name == "Saturnovi prstenovi" ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/ 29.447      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   6 :  9.54) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(   26.73/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/   0.44, 0 );
+                  else if( scene[i].name == "Uran"                ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/ 84.017      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   7 : 19.22) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(   97.86/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/  -0.72, 0 );
+                  else if( scene[i].name == "Neptun"              ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/164.791      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   8 : 30.06) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(   29.58/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/   0.67, 0 );
+                  else                                              scene[i].transf = Matrix4D.I;
+               break;
+         }
+      }
 
 
 
@@ -633,9 +786,10 @@ namespace Graphics3D
          }
 
          //praznjenje Z buffera
-         for( int y = 0; y < draw_hei; y++ )
-            for(int x = 0; x < draw_wid; x++ )
-               zbuf[y][x] = -1000000.0;
+         if( depth_mode == depth_zbuf )         
+            for( int y = 0; y < draw_hei; y++ )
+               for(int x = 0; x < draw_wid; x++ )
+                  zbuf[y][x] = -100000000;
 
 
 
@@ -644,52 +798,54 @@ namespace Graphics3D
          g.ScaleTransform( 1, -1 );                       //menja smer y ose tako da y koordinate rastu navise (po defaultu rastu nanize)
 
 
-
-         //Iscrtavanje koordinatnog sistema viewporta
          Pen AxisPen    = new Pen(Color.Gray,      1);
          Pen Grid10Pen  = new Pen(Color.White,     1);
          Pen Grid100Pen = new Pen(Color.LightGray, 1);
 
-
-         g.DrawLine(AxisPen, -draw_wid/2, 0, draw_wid/2, 0);   //X-osa
-         int m10  = 1;
-         int m100 = 3;
-         for( int i = -(draw_wid/2/10)*10; i < draw_wid/2; i += 10 )
+         //iscrtavanje grida
+         if(    background_mode == background_grid
+             || background_mode == background_all )
          {
-            if( i == 0 ) continue;
-            g.DrawLine( (i%100 == 0 ? Grid100Pen : Grid10Pen),  i, -draw_hei/2,                  i,  draw_hei/2 );
-            g.DrawLine(                            AxisPen,     i, (i%100 == 0 ? -m100 : -m10),  i, (i%100 == 0 ? +m100 : m10) );   //podeoci na X-osi
-         }
-         g.DrawLine(AxisPen, 0, -draw_hei/2, 0, draw_hei/2);   //Y-osa
-         for( int i = -(draw_hei/2/10)*10; i < draw_hei/2; i += 10 )
-         {
-            if( i == 0 ) continue;
-            g.DrawLine( (i%100 == 0 ? Grid100Pen : Grid10Pen), -draw_wid/2,                  i, draw_wid/2,                   i );
-            g.DrawLine(                            AxisPen,    (i%100 == 0 ? -m100 : -m10),  i, (i%100 == 0 ? +m100 : +m10),  i );   //podeoci na Y-osi
-         }
+            //Iscrtavanje koordinatnog sistema viewporta
 
-
-
-
-
-         //===================Testing1=====================
-
-         //"tunel"
-         for( int t = -400; t <= -50; t += 50 )
-         {
-            pen.Color = (t == Zvp ? Color.Black : Color.Silver);
-            Vector4D tl = pp * new Vector4D( Xlcp, Ytcp, t );
-            Vector4D tr = pp * new Vector4D( Xrcp, Ytcp, t );
-            Vector4D br = pp * new Vector4D( Xrcp, Ybcp, t );
-            Vector4D bl = pp * new Vector4D( Xlcp, Ybcp, t );    
-            g.DrawLine( pen, (float) tl.getnormx(), (float) tl.getnormy(), (float) tr.getnormx(), (float) tr.getnormy() );
-            g.DrawLine( pen, (float) tr.getnormx(), (float) tr.getnormy(), (float) br.getnormx(), (float) br.getnormy() );
-            g.DrawLine( pen, (float) br.getnormx(), (float) br.getnormy(), (float) bl.getnormx(), (float) bl.getnormy() );
-            g.DrawLine( pen, (float) bl.getnormx(), (float) bl.getnormy(), (float) tl.getnormx(), (float) tl.getnormy() );
+            g.DrawLine(AxisPen, -draw_wid/2, 0, draw_wid/2, 0);   //X-osa
+            int m10  = 1;
+            int m100 = 3;
+            for( int i = -(draw_wid/2/10)*10; i < draw_wid/2; i += 10 )
+            {
+               if( i == 0 ) continue;
+               g.DrawLine( (i%100 == 0 ? Grid100Pen : Grid10Pen),  i, -draw_hei/2,                  i,  draw_hei/2 );
+               g.DrawLine(                            AxisPen,     i, (i%100 == 0 ? -m100 : -m10),  i, (i%100 == 0 ? +m100 : m10) );   //podeoci na X-osi
+            }
+            g.DrawLine(AxisPen, 0, -draw_hei/2, 0, draw_hei/2);   //Y-osa
+            for( int i = -(draw_hei/2/10)*10; i < draw_hei/2; i += 10 )
+            {
+               if( i == 0 ) continue;
+               g.DrawLine( (i%100 == 0 ? Grid100Pen : Grid10Pen), -draw_wid/2,                  i, draw_wid/2,                   i );
+               g.DrawLine(                            AxisPen,    (i%100 == 0 ? -m100 : -m10),  i, (i%100 == 0 ? +m100 : +m10),  i );   //podeoci na Y-osi
+            }
          }
 
-
+         //iscrtavanje background linija
+         if(    background_mode == background_lines
+             || background_mode == background_all )
          {
+
+            //"tunel"
+            for( int t = -400; t <= -50; t += 50 )
+            {
+               pen.Color = (t == Zvp ? Color.Black : Color.Silver);
+               Vector4D tl = pp * new Vector4D( Xlcp, Ytcp, t );
+               Vector4D tr = pp * new Vector4D( Xrcp, Ytcp, t );
+               Vector4D br = pp * new Vector4D( Xrcp, Ybcp, t );
+               Vector4D bl = pp * new Vector4D( Xlcp, Ybcp, t );    
+               g.DrawLine( pen, (float) tl.getnormx(), (float) tl.getnormy(), (float) tr.getnormx(), (float) tr.getnormy() );
+               g.DrawLine( pen, (float) tr.getnormx(), (float) tr.getnormy(), (float) br.getnormx(), (float) br.getnormy() );
+               g.DrawLine( pen, (float) br.getnormx(), (float) br.getnormy(), (float) bl.getnormx(), (float) bl.getnormy() );
+               g.DrawLine( pen, (float) bl.getnormx(), (float) bl.getnormy(), (float) tl.getnormx(), (float) tl.getnormy() );
+            }
+
+
             //pravougaonik koji lezi u FCP
             pen.Color = Color.Red;
             Vector4D Ftl = pp * new Vector4D( Xlcp, Ytcp, Zfcp );
@@ -717,112 +873,12 @@ namespace Graphics3D
             g.DrawLine( pen, (float) Fbr.getnormx(), (float) Fbr.getnormy(), (float) Nbr.getnormx(), (float) Nbr.getnormy() );
             g.DrawLine( pen, (float) Fbl.getnormx(), (float) Fbl.getnormy(), (float) Nbl.getnormx(), (float) Nbl.getnormy() );
          }
+      
 
-         /*
-         //da li je viewport pravilno orijentisan (pravougaonik i trougao treba da se preklapaju u prvom kvadrantu XY ravni)
-         pen.Color = Color.Cyan;
-         g.DrawRectangle( pen, 50,100,150,50);
-         DrawTriangle( g, new Triangle( new Vector4D(50,100,Zvp), new Vector4D(200,100,Zvp), new Vector4D(50,150,Zvp), Color.DarkCyan ) );
-         */
+         //iscrtavanje mesh-ova
+         for( int i = 0; i < scene.Count; i++ )
+            DrawMesh( g, scene[i], vt * scene[i].transf );
 
-         /*
-         //trougao koji lezi u NCP
-         DrawTriangle( g, new Triangle( new Vector4D(50,100,Zncp), new Vector4D(200,100,Zncp), new Vector4D(50,150,Zncp), Color.LightGreen ) );
-         */
-
-         /*
-         //da li matrice rotacije rade ispravno
-         Mesh m1 = Mesh.rectangle( 100, 200, Color.Orange, 5 );
-       //DrawMesh( g, m1, vt );
-         DrawMesh( g, m1, vt * Matrix4D.rotateX( Cmath.PI/6 ) );
-       //DrawMesh( g, m1, vt * Matrix4D.rotateZ( Cmath.PI/6 ) );
-         */
-
-
-
-
-         //===================Testing2=====================
-
-       //Matrix4D transf1 = vt * Matrix4D.rotateZ( Cmath.PI / 2 - radz ) * Matrix4D.transl( 150, 0, 0 ) * Matrix4D.rotateX( Cmath.PI / 2 - radx );
-       //Matrix4D transf1 = vt * Matrix4D.rotateZ( Cmath.PI / 2 - radz );
-       //Matrix4D transf1 = vt * Matrix4D.rotateZ( Cmath.PI / 2 - radz ) * Matrix4D.transl( 150, 0, 0 );
-       //Matrix4D transf1 = vt * Matrix4D.rotateX( radx );
-       //Matrix4D transf1 = vt;
-         Matrix4D transf1 = vt * Matrix4D.rotate( Math.PI/12, rady, 0 ) * Matrix4D.transl( 150, 0, 0 );
-
-         Matrix4D transf2 = vt * Matrix4D.transl( 0, 150 * Math.Sin(radx), 0 ) * Matrix4D.rotate ( radx, 0, radz );
-       //Matrix4D transf2 = vt * Matrix4D.rotateZ( Cmath.PI / 2 - radz ) * Matrix4D.transl( -100, 0, 0 );
-       //Matrix4D transf2 = vt;
-
-       //Matrix4D transf3 = vt * Matrix4D.rotate( 0, rady, 0 ) * Matrix4D.transl( 150, 0, 0 );
-         Matrix4D transf3 = vt * Matrix4D.rotate( Math.PI/12, rady, 0 ) * Matrix4D.transl( 150, 0, 0 );
-
-         DrawMesh( g, mesh1, transf1 );
-         DrawMesh( g, mesh2, transf2 );
-         DrawMesh( g, mesh3, transf3 );
-
-
-         //GetPixel() i SetPixel() su jako spore!!!!!!!!!!
-         /*
-         //sporo!!!
-         Color c;
-         for( int x = 0; x < draw_wid; x++ )
-            for( int y = 0; y < draw_hei/2; y++ )
-               c = bitmap.GetPixel( x, y );
-                        
-         //sporo!!!
-         for( int x = 0; x < draw_wid; x++ )
-            for( int y = 0; y < draw_hei/2; y++ )
-               bitmap.SetPixel( x, y, Color.Red );
-         */
-
-         //GDI iscrtavanje je za nijansu brza!!!!!!!!!!!!!!
-         /*
-         IntPtr hdc = e.Graphics.GetHdc();  //zbog GDI SetPixel
-         //zbog GDI SetPixel
-       //Color pixelColor = GetPixelColor(x, y);
-         Color pixelColor = Color.Red;
-         uint colorRef = (uint)((pixelColor.B << 16) | (pixelColor.G << 8) | (pixelColor.R));  // GDI colors are BGR, not ARGB.
-         for( int x = 0; x < draw_wid; x++ )
-            for( int y = 0; y < draw_hei/2; y++ )
-               GDI.SetPixel(hdc, x, y, colorRef);
-         e.Graphics.ReleaseHdc(hdc);   //zbog GDI SetPixel
-         */
-
-         /*           
-         //pointersko crtanje po bitmapi u memoriji je najbrze
-         unsafe   //unsafe se navodi zbog upotrebe pointera (a treba ukljuciti i /unsafe u kompajleru)
-         {
-            BitmapData bitmapData = bitmap.LockBits( new Rectangle(0, 0, draw_wid, draw_hei), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb );
-            ColorARGB* startingPosition = (ColorARGB*) bitmapData.Scan0;
-            ColorARGB* position;
-            
-            for (int i = 0; i < draw_hei/2; i++)
-            {
-               for (int j = 0; j < draw_wid; j++)
-               {
-                  position = startingPosition + j + i * draw_wid;
-                  position->SetColor( Color.Red );
-               }
-            }
-            bitmap.UnlockBits(bitmapData);
-         }
-         */
-         
-         /*
-         //pointersko crtanje po bitmapi u memoriji je najbrze
-         unsafe   //unsafe se navodi zbog upotrebe pointera (a treba ukljuciti i /unsafe u kompajleru)
-         {
-            BitmapData bitmapData = bitmap.LockBits( new Rectangle(0, 0, draw_wid, draw_hei), ImageLockMode.ReadWrite, PixelFormat.Format32bppArgb );
-            ColorARGB* position = (ColorARGB*) bitmapData.Scan0;
-            
-            for (int i = 0; i < draw_hei/2; i++)
-               for (int j = 0; j < draw_wid; j++)
-                  (position++)->SetColor( Color.Red );
-
-            bitmap.UnlockBits(bitmapData);
-         }
-         */
 
 
 
@@ -842,7 +898,6 @@ namespace Graphics3D
          //prikaz double-buffering bitmape
          e.Graphics.DrawImage( bitmap, 0, 0, draw_wid, draw_hei );
          g?.Dispose();   //oslobadja memoriju ako nije null
-       //h?.Dispose();
 
 
          Console.WriteLine(refresh_cnt++);
@@ -851,77 +906,76 @@ namespace Graphics3D
       private void timer_draw_Tick(object sender, EventArgs e)
       {
          //Invalidate();
+         if( time_mode == time_auto )
+         {
+            radx += radx_inc;
+            rady += rady_inc;
+            radz += radz_inc;
+            Tsim += Tsim_inc;
+            if( Orbiting )
+               Tsim_orb += Tsim_inc;
+            UpdatePositions();
+            Console.WriteLine("time increased" );
+            Refresh();
+         }
       }
 
       private void Form_KeyDown(object sender, KeyEventArgs e)
       {
          switch( e.KeyCode )
          {
-            case Keys.Add:
-               if(detail < 30)
-               {
-                  detail++;
-                  UpdateModels();
-                  Refresh();
-               }
-               break;
-            case Keys.Subtract:
-               if(detail > 0)
-               {
-                  detail--;
-                  UpdateModels();
-                  Refresh();
-               }
-               break;
-            
-            case Keys.Left:
-               radx += radx_inc;
-               rady += rady_inc;
-               radz += radz_inc;
-               Refresh();
-               break;
-            case Keys.Right:
-               radx -= radx_inc;
-               rady -= rady_inc;
-               radz -= radz_inc;
-               Refresh();
-               break;
+            //detalji mesh-eva
+            case Keys.Add:       if(detail < 10) {    detail++;   UpdateModels();    Console.WriteLine("Degree of detail increased to {0}", detail );   Refresh();   }   break;
+            case Keys.Subtract:  if(detail > 0)  {    detail--;   UpdateModels();    Console.WriteLine("Degree of detail decreased to {0}", detail );   Refresh();   }   break;
 
-            case Keys.Multiply:
-               if( Zncp > -400 )
-               {
-                  Zncp -= 2;
-                  Refresh();
-               }
-               break;
-            case Keys.Divide:
-               if( Zncp <= -4 )
-               {
-                  Zncp += 2;
-                  Refresh();
-               }
-               break;
+            //protok vremena
+            case Keys.PageUp:    if( time_mode == time_manual && ModifierKeys == Keys.None)   {  radx +=    radx_inc;    rady +=    rady_inc;    radz +=    radz_inc;    Tsim +=    Tsim_inc;   if( Orbiting ) Tsim_orb +=    Tsim_inc;   UpdatePositions();    Console.WriteLine("Time increased"                 );    Refresh();   }   
+                            else if( time_mode == time_manual && ModifierKeys == Keys.Shift)  {  radx += 10*radx_inc;    rady += 10*rady_inc;    radz += 10*radz_inc;    Tsim += 24*Tsim_inc;   if( Orbiting ) Tsim_orb += 24*Tsim_inc;   UpdatePositions();    Console.WriteLine("Time increased (10 increments)" );    Refresh();   }   break;
+            case Keys.PageDown:  if( time_mode == time_manual && ModifierKeys == Keys.None )  {  radx -=    radx_inc;    rady -=    rady_inc;    radz -=    radz_inc;    Tsim -=    Tsim_inc;   if( Orbiting ) Tsim_orb -=    Tsim_inc;   UpdatePositions();    Console.WriteLine("Time decreased"                 );    Refresh();   } 
+                            else if( time_mode == time_manual && ModifierKeys == Keys.Shift)  {  radx -= 10*radx_inc;    rady -= 10*rady_inc;    radz -= 10*radz_inc;    Tsim -= 24*Tsim_inc;   if( Orbiting ) Tsim_orb -= 24*Tsim_inc;   UpdatePositions();    Console.WriteLine("Time decreased (10 increments)" );    Refresh();   }   break;
 
-            case Keys.C:
-               draw_clipped_xy = ! draw_clipped_xy;
-               Refresh();
-               break;
-            case Keys.D:
-               depth_algorithm = (depth_algorithm+1) % depth_algorithm_cnt;
-               Refresh();
-               break;
-            case Keys.W:
-               draw_wireframe = ! draw_wireframe;
-               Refresh();
-               break;
-            case Keys.S:
-               draw_surfaces = ! draw_surfaces;
-               Refresh();
-               break;
-            case Keys.N:
-               draw_normals = ! draw_normals;
-               Refresh();
-               break;
+            //kretanje kamere 
+            case Keys.Home:    if( ModifierKeys == Keys.None    )  {   vt = Matrix4D.transl( 0,  0,   3) * vt;    Console.WriteLine("Camera moved forward" );             Refresh();   }   
+                          else if( ModifierKeys == Keys.Shift   )  {   vt = Matrix4D.transl( 0,  0,  30) * vt;    Console.WriteLine("Camera moved fast forward" );        Refresh();   } 
+                          else if( ModifierKeys == Keys.Control )  {   vt = Matrix4D.transl( 0,  0, 300) * vt;    Console.WriteLine("Camera moved extra fast forward" );  Refresh();   }   break;
+            case Keys.End:     if( ModifierKeys == Keys.None    )  {   vt = Matrix4D.transl( 0,  0,  -3) * vt;    Console.WriteLine("Camera moved backward" );            Refresh();   }   
+                          else if( ModifierKeys == Keys.Shift   )  {   vt = Matrix4D.transl( 0,  0, -30) * vt;    Console.WriteLine("Camera moved fast backward" );       Refresh();   } 
+                          else if( ModifierKeys == Keys.Control )  {   vt = Matrix4D.transl( 0,  0,-300) * vt;    Console.WriteLine("Camera moved extra fast backward" ); Refresh();   }   break;
+            case Keys.Left:    if( ModifierKeys == Keys.Alt     )  {   vt = Matrix4D.transl( 3,  0,   0) * vt;    Console.WriteLine("Camera moved left" );                Refresh();   } 
+                          else if( ModifierKeys == Keys.None    )  {   vt = Matrix4D.rotateY(-0.03)      * vt;    Console.WriteLine("Camera oriented toward left" );      Refresh();   }   break;
+            case Keys.Right:   if( ModifierKeys == Keys.Alt     )  {   vt = Matrix4D.transl(-3,  0,   0) * vt;    Console.WriteLine("Camera moved right" );               Refresh();   }
+                          else if( ModifierKeys == Keys.None    )  {   vt = Matrix4D.rotateY( 0.03)      * vt;    Console.WriteLine("Camera oriented toward right" );     Refresh();   }   break;
+            case Keys.Up:      if( ModifierKeys == Keys.Alt     )  {   vt = Matrix4D.transl( 0,  -3,  0) * vt;    Console.WriteLine("Camera moved up" );                  Refresh();   }
+                          else if( ModifierKeys == Keys.None    )  {   vt = Matrix4D.rotateX(-0.03)      * vt;    Console.WriteLine("Camera oriented upward" );           Refresh();   }   break;
+            case Keys.Down:    if( ModifierKeys == Keys.Alt     )  {   vt = Matrix4D.transl( 0,  3,   0) * vt;    Console.WriteLine("Camera moved down" );                Refresh();   }
+                          else if( ModifierKeys == Keys.None    )  {   vt = Matrix4D.rotateX( 0.03)      * vt;    Console.WriteLine("Camera oriented downward" );         Refresh();   }   break;
+
+            //pomeranje near clipping plane-a
+            case Keys.Multiply:   if( Zncp > -400 ) {   Zncp -= 2;   Console.WriteLine("Near Clipping Plane moved forward to Zncp={0}", Zncp );    Refresh();   }   break;
+            case Keys.Divide:     if( Zncp <= -4 )  {   Zncp += 2;   Console.WriteLine("Near Clipping Plane moved backward to Zncp={0}", Zncp );   Refresh();   }   break;
+
+            //promena scene
+            case Keys.Tab:    if( ModifierKeys == Keys.None )  { scene_num = (            scene_num + 1) % scene_cnt;   UpdateModels();   Console.WriteLine("Current scene num={0}", scene_num );   Refresh();  }
+                         else if( ModifierKeys == Keys.Shift ) { scene_num = (scene_cnt + scene_num - 1) % scene_cnt;   UpdateModels();   Console.WriteLine("Current scene num={0}", scene_num );   Refresh();  }  break;
+
+            //promena clipping moda i poravnavanje kamere sa nekom osom
+            case Keys.X:       if( ModifierKeys == Keys.Control )  {  clip_x = ! clip_x;                                               Console.WriteLine("X-clipping mode {0}", clip_x );   Refresh();   } 
+                          else if( ModifierKeys == Keys.None )     {  vt = Matrix4D.transl(0, 0, Zvp) * Matrix4D.rotateY(-Math.PI/2);  Console.WriteLine("Camera reset to X axis" );        Refresh();   }   break; //posmatra se iz pravca X ose
+            case Keys.Y:       if( ModifierKeys == Keys.Control )  {  clip_y = ! clip_y;                                               Console.WriteLine("Y-clipping mode {0}", clip_y );   Refresh();   }
+                          else if( ModifierKeys == Keys.None )     {  vt = Matrix4D.transl(0, 0, Zvp) * Matrix4D.rotateX( Math.PI/2);  Console.WriteLine("Camera reset to Y axis" );        Refresh();   }   break; //posmatra se iz pravca Y ose
+            case Keys.Z:       if( ModifierKeys == Keys.None )     {  vt = Matrix4D.transl(0, 0, Zvp);                                 Console.WriteLine("Camera reset to Z axis" );        Refresh();   }   break;// posmatra se iz pravca Z ose (inicijalni pravac) 
+
+            //promena modova prikazivanja
+            case Keys.T:    time_mode = (time_mode + 1) % time_mode_cnt;                                   Console.WriteLine("Time mode {0}", time_mode );                           Refresh();   break;
+            case Keys.D:    depth_mode = (depth_mode + 1) % depth_mode_cnt;                                Console.WriteLine("Depth mode {0}", depth_mode );                         Refresh();   break;
+            case Keys.W:    wireframe_mode = (wireframe_mode + 1) % wireframe_mode_cnt;                    Console.WriteLine("Wireframe mode {0}", wireframe_mode );                 Refresh();   break;
+            case Keys.S:    surface_mode = (surface_mode + 1) % surface_mode_cnt;                          Console.WriteLine("surface mode {0}", surface_mode );                     Refresh();   break;
+            case Keys.H:    shading_mode = (shading_mode + 1) % shading_mode_cnt;                          Console.WriteLine("shading mode {0}", shading_mode );                     Refresh();   break;
+            case Keys.N:    draw_normals = ! draw_normals;                                                 Console.WriteLine("draw normals {0}", draw_normals );                     Refresh();   break;
+            case Keys.B:    background_mode = (background_mode + 1) % background_mode_cnt;                 Console.WriteLine("background_mdoe {0}", background_mode );               Refresh();   break;
+            case Keys.E:    EkvidistantneOrbitale = ! EkvidistantneOrbitale;               UpdateModels(); Console.WriteLine("equidistant orbitals {0}", EkvidistantneOrbitale );    Refresh();   break;
+            case Keys.R:    Resized = ! Resized;                                           UpdateModels(); Console.WriteLine("resized {0}", Resized );                               Refresh();   break;
+            case Keys.O:    Orbiting = ! Orbiting;                                                         Console.WriteLine("orbiting {0}", Orbiting );                             Refresh();   break;
          }
       }
 

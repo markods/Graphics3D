@@ -341,7 +341,7 @@ namespace MGL
       #region Testing
       public static void test1()
       {
-         Console.WriteLine("----------------- <<<<<<<< Cmath test 1");
+         Console.WriteLine("---------------------------------------- <<<<<<<< Cmath test 1");
 
          double x = 50.423416;   //ova dva broja su skoro identicna,
          double y = 50.423417;   //razlikuju se na sedmoj znacajnoj cifri
@@ -469,17 +469,18 @@ namespace MGL
          Console.WriteLine();
          Console.WriteLine("whole_part({0}, {1}) = {2,3:G8}", a, base2, Cmath.whole_part(a, base2));
          Console.WriteLine("frac_part ({0}, {1}) = {2,3:G8}", a, base2, Cmath.frac_part (a, base2));
-         Console.WriteLine("whole_part({0}, {1}) = {2,3:G8}", a, base2, Cmath.whole_part(b, base2));
-         Console.WriteLine("frac_part ({0}, {1}) = {2,3:G8}", a, base2, Cmath.frac_part (b, base2));
+         Console.WriteLine("whole_part({0}, {1}) = {2,3:G8}", b, base2, Cmath.whole_part(b, base2));
+         Console.WriteLine("frac_part ({0}, {1}) = {2,3:G8}", b, base2, Cmath.frac_part (b, base2));
 
       }
 
       public static void test2()
       {
+         Console.WriteLine("---------------------------------------- <<<<<<<< Cmath test 2");
+
+
          double[,] a = { { 1,  2,  3,  4}, { 5,  6,  7,  8}, { 9, 10, 11, 12}, {13, 14, 15, 16} };   //dvodimenzionalni niz ( razlicit od matrice!!! )
          double[,] b = { {16, 15, 14, 13}, {12, 11, 10,  9}, { 8,  7,  6,  5}, { 4,  3,  2,  1} };   //            -||-
-
-         Console.WriteLine("----------------- <<<<<<<< Cmath test 2");
 
          Console.WriteLine("Niz a = {0}", write_all(a));
          Console.WriteLine("Niz b = {0}", write_all(b));
@@ -504,7 +505,7 @@ namespace MGL
       
       public static void test3()
       {
-         Console.WriteLine("----------------- <<<<<<<< Cmath test 3");
+         Console.WriteLine("---------------------------------------- <<<<<<<< Cmath test 3");
 
          Console.WriteLine("Cmath.sin(  PI / 2 ) = {0,3:G6}", Cmath.sin(  PI / 2 ));
          Console.WriteLine("Cmath.sin(  PI / 6 ) = {0,3:G6}", Cmath.sin(  PI / 6 ));

@@ -18,7 +18,7 @@ namespace Graphics3D
          Application.Run(new Form());
 
 
-         testing_harness();
+         //testing_harness();
       }
 
 
@@ -30,7 +30,7 @@ namespace Graphics3D
          //Cmath.test1();
          //Cmath.test2();
          //Cmath.test3();
-         Vector3D.test1();
+         //Vector3D.test1();
          //Vector4D.test1();
          //Matrix4D.test1();
          //Triangle.test1();

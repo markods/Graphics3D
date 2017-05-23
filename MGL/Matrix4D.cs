@@ -203,7 +203,7 @@ namespace MGL
 
       public static Matrix4D projXY(double d)   //perspective projection matrix (useful for drawing to monitor)
       {
-         if( Cmath.approx(d, 0) )
+         if( Cmath.approx(d, 0, Cmath.ulp) )
             throw new ArgumentException("Viewing plane cannot be singular");
          
          
@@ -278,7 +278,7 @@ namespace MGL
       
       public static Matrix4D operator /(Matrix4D A, double k)
       {
-         if( k == 0 )
+         if( Cmath.approx(k, 0, Cmath.ulp) )
             throw new ArgumentException("Matrix4D division by zero");
          
          
@@ -286,7 +286,7 @@ namespace MGL
       }
 
 
-      public static Matrix4D transp(Matrix4D A)   //returns a new matrix that is the transpose of the input matrix
+      public static Matrix4D transpose(Matrix4D A)   //returns a new matrix that is the transpose of the input matrix
       {
          double[,] a = new double[dimm, dimm];
 
@@ -308,7 +308,7 @@ namespace MGL
       #region Testing
       public static void test1()
       {
-         Console.WriteLine("----------------- <<<<<<<< Matrix4D test 1");
+         Console.WriteLine("---------------------------------------- <<<<<<<< Matrix4D test 1");
 
          double[,] arr1 = { { 1,  2,  3,  4}, { 5,  6,  7,  8}, { 9, 10, 11, 12}, {13, 14, 15, 16} };
          double[,] arr2 = { {16, 15, 14, 13}, {12, 11, 10,  9}, { 8,  7,  6,  5}, { 4,  3,  2,  1} };
@@ -326,30 +326,30 @@ namespace MGL
          Console.WriteLine("----------------");
 
          Console.WriteLine();
-         Console.WriteLine("M1+M2 = {0}", M1 + M2);
-         Console.WriteLine("M1-M2 = {0}", M1 - M2);
-         Console.WriteLine("+M1   = {0}", +M1    );
-         Console.WriteLine("-M1   = {0}", -M1    );
+         Console.WriteLine("M1+M2 = {0}",  M1 + M2);
+         Console.WriteLine("M1-M2 = {0}",  M1 - M2);
+         Console.WriteLine("+M1   = {0}", +M1     );
+         Console.WriteLine("-M1   = {0}", -M1     );
 
          Console.WriteLine();
-         Console.WriteLine("M1*2  = {0}", M1*2   );
-         Console.WriteLine("2*M1  = {0}", 2*M1   );
-         Console.WriteLine("M1*M2 = {0}", M1*M2  );
-         Console.WriteLine("M1/2  = {0}", M1/2   );
+         Console.WriteLine("M1 * 2  = {0}", M1*2   );
+         Console.WriteLine("2 * M1  = {0}", 2*M1   );
+         Console.WriteLine("M1 * M2 = {0}", M1*M2  );
+         Console.WriteLine("M1 / 2  = {0}", M1/2   );
 
          Console.WriteLine();
-         Console.WriteLine("M1*I    = {0}", M1 * Matrix4D.I   );
-         Console.WriteLine("M1*zero = {0}", M1 * Matrix4D.zero);
+         Console.WriteLine("M1 * I    = {0}", M1 * Matrix4D.I   );
+         Console.WriteLine("M1 * zero = {0}", M1 * Matrix4D.zero);
 
          Console.WriteLine();
-         Console.WriteLine("transp(M1) = {0}", Matrix4D.transp(M1));
+         Console.WriteLine("transpose(M1) = {0}", Matrix4D.transpose(M1));
 
 
 
          Console.WriteLine("----------------");
 
-         double pi = 3.14;   //approximately PI
-         double a  = 3;      //some random distinct values
+         double pi = 3.1415;   //approximately PI
+         double a  = 3;        //some random distinct values
          double b  = 5;
          double c  = 7;
 
