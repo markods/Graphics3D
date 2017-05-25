@@ -41,9 +41,6 @@ public struct ColorARGB
 }
 
 
-
-
-
 namespace Graphics3D
 {
    public partial class Form : System.Windows.Forms.Form
@@ -71,7 +68,7 @@ namespace Graphics3D
       //moze jer je aplikacija single-threaded
       SolidBrush brush;
       Pen        pen;
-      Point[] trianglepoints;
+      Point[]    trianglepoints;
 
       const int front_side =  1;
       const int both_sides =  0;
@@ -211,6 +208,7 @@ namespace Graphics3D
       }
 
 
+
       private void Form_Load(object sender, EventArgs e)
       {
          //postavlja stil Form-e da se pri resize ponovo iscrtava
@@ -230,22 +228,23 @@ namespace Graphics3D
       }
 
 
+
       Color Brighten(Color c1, double factor)
       {
-          double r = ((c1.R * factor) > 255) ? 255 : (c1.R * factor);
-          double g = ((c1.G * factor) > 255) ? 255 : (c1.G * factor);
-          double b = ((c1.B * factor) > 255) ? 255 : (c1.B * factor);
+         double r = ((c1.R * factor) > 255) ? 255 : (c1.R * factor);
+         double g = ((c1.G * factor) > 255) ? 255 : (c1.G * factor);
+         double b = ((c1.B * factor) > 255) ? 255 : (c1.B * factor);
 
-          Color c = Color.FromArgb( c1.A, (int) r, (int) g, (int) b );
-          return c;
+         Color c = Color.FromArgb( c1.A, (int) r, (int) g, (int) b );
+         return c;
       }
 
 
-
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
       private Vector4D Intersect( Vector4D v1, Vector4D v2, Vector4D N, Vector4D L )  
       {
          if( (v2 - v1)*N == 0 )
-            return (v1 + v2) / 2;  //debug!!!!!!!!!
+            return (v1 + v2) / 2;  //forensic?
 
          //returns intersection point of line (between v1 and V2) through plane (N = normal to plane, L = point which belongs to plane)
          return v1 + ((L - v1)*N) / ((v2 - v1)*N) * (v2 - v1);
@@ -253,6 +252,143 @@ namespace Graphics3D
 
 
 
+
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      private void ClipLine(ref Vector3D v0, ref Vector3D v1)
+      {
+         throw new NotImplementedException("Buggy stuff.");   //forensic?
+
+         double clip_wid = 2;
+         double clip_hei = 2;
+         double clip_dep = 1;
+
+
+         const int reg_n = 2 << 5;   //near   regional code
+         const int reg_f = 2 << 4;   //far        -||-
+         const int reg_t = 2 << 3;   //top        -||-
+         const int reg_b = 2 << 2;   //bottom     -||-
+         const int reg_l = 2 << 1;   //left       -||-
+         const int reg_r = 2 << 0;   //right      -||-
+
+
+
+         Vector3D[] v = new Vector3D[2];
+         int[] v_reg = new int[2];   //vectors' regional code
+
+         v[0] = v0;
+         v[1] = v1;
+
+         
+         for( int i = 0; i < 2; i++ )   //setting regional codes
+         {
+            v_reg[i] = 0;
+
+            v_reg[i] &= (v[i].getz() > clip_dep  ) ? reg_n : (v[i].getz() < 0         ) ? reg_f : ~0;
+            v_reg[i] &= (v[i].gety() > clip_hei/2) ? reg_t : (v[i].getx() < clip_hei/2) ? reg_b : ~0;
+            v_reg[i] &= (v[i].getx() > clip_wid/2) ? reg_r : (v[i].getx() < clip_wid/2) ? reg_l : ~0;
+         }
+
+         
+         if( (v_reg[0] & v_reg[1]) == 0 ) return;   //apparently & doesn't take prescedence over ==
+         
+
+         for( int i = 0; i < 2; i++ )
+         {
+            if     ( (v_reg[i] & reg_n) != 0 )
+            {
+               
+            }
+            else if( (v_reg[i] & reg_f) != 0 ) { }
+            else if( (v_reg[i] & reg_l) != 0 ) { }
+            else if( (v_reg[i] & reg_r) != 0 ) { }
+            else if( (v_reg[i] & reg_t) != 0 ) { }
+            else if( (v_reg[i] & reg_b) != 0 ) { }
+         }
+
+      }
+      
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      private bool ClipTriangle(Graphics g, ref Triangle T, Vector4D N, Vector4D L, int DrawSide)
+      {  
+         //CP je clipping plane
+         //N je normala na CP usmerena ka njegovoj spoljasnosti (tj. delu koji se odbacuje)
+         //L je tacka koja pripada CP
+         //trougao T dat u koordinatnom sistemu posmatraca, ali na njega nije primenjena projekcija perspektive
+
+         //ispitivanje da li treba raditi clipping
+         // s0, s1 i s2 su pozitivni ako je tacka sa spoljne strane CP
+         int s0 = Math.Sign(Math.Round( N * (T.getv(0) - L), Cmath.hip )); 
+         int s1 = Math.Sign(Math.Round( N * (T.getv(1) - L), Cmath.hip )); 
+         int s2 = Math.Sign(Math.Round( N * (T.getv(2) - L), Cmath.hip ));
+         int s  = s0+s1+s2;  
+         int a  = Math.Abs(s0) + Math.Abs(s1) + Math.Abs(s2); 
+   
+         if(     s == 3               //ako su sva tri temena trougla spolja
+             ||  s == 2               //ako su dva temena trougla spolja, a trece teme lezi u CP
+             || (s == 1 && a == 1 ))  //ako je jedno teme spolja, a druga dva leze u CP
+         {
+            return false;  //ne treba crtati trougao koji je ispred CP u odnosu na posmatraca
+         }
+         else if(     s == -3               //ako su sva tri temena trougla unutra
+                  ||  s == -2               //ako su dva temena trougla unutra, a trece teme lezi u CP
+                  || (s == -1 && a == 1 )   //ako je jedno teme unutra, a druga dva leze u CP
+                  || (s ==  0 && a == 0 ))  //ako su sva tri temena trougla u CP
+         {
+            //preskociti CP clipping trougla koji je ceo iza CP u odnosu na posmatraca
+         }
+         else if( s == 0 && a == 2 )
+         {
+            //smanjiti trougao (odbacivanjem spoljasnjeg dela) koji je presecen CP-om tako da mu je jedno teme unutra, drugo spolja a trece lezi u CP
+            int idxcp  = (s1 ==  0 ? 1 : (s2 ==  0 ? 2 : 0));
+            int idxo   = (s1 ==  1 ? 1 : (s2 ==  1 ? 2 : 0));
+            int idxi   = (s1 == -1 ? 1 : (s2 == -1 ? 2 : 0));
+
+            Vector4D I1 = Intersect( T.getv(idxi), T.getv(idxo), N, L );
+
+            T.setv( idxo, I1 );  //spoljasnje teme ce biti zamenjeno tackom proboja te duzi kroz CP)
+
+          //pen.Color = Color.LightGreen;
+         }
+         else if( s ==  1 && a == 3 )
+         {
+            //smanjiti trougao (odbacivanjem spoljasneg dela) koji je presecen CP-om tako da mu je jedno teme unutra a dva spolja
+            int idxi  = (s1 == -1 ? 1 : (s2 == -1 ? 2 : 0));
+            int idxo1 = (idxi + 1) % 3;
+            int idxo2 = (idxi + 2) % 3;
+
+            Vector4D I1 = Intersect( T.getv(idxi), T.getv(idxo1), N, L );
+            Vector4D I2 = Intersect( T.getv(idxi), T.getv(idxo2), N, L );
+
+            T.setv( idxo1, I1 );  //prvo spoljasnje teme ce biti zamenjeno tackom proboja te duzi kroz CP)
+            T.setv( idxo2, I2 );  //drugo spoljasnje teme ce biti zamenjeno tackom proboja te duzi kroz CP)
+
+         //pen.Color = Color.LightBlue;
+         }
+         else if( s == -1 && a == 3 )
+         {
+            //raseci na dva dela trougao koji je presecen CP-om tako da mu je jedno teme spolja a dva unutra
+            int idxo  = (s1 == 1 ? 1 : (s2 == 1 ? 2 : 0));
+            int idxi1 = (idxo + 1) % 3;
+            int idxi2 = (idxo + 2) % 3;
+
+            Vector4D I1 = Intersect( T.getv(idxi2), T.getv(idxo), N, L );
+            Vector4D I2 = Intersect( T.getv(idxi1), T.getv(idxo), N, L );
+
+            DrawTriangle( g, new Triangle( T.getv(idxi1), T.getv(idxi2), I1,     T.get_color() ), DrawSide );
+            DrawTriangle( g, new Triangle( T.getv(idxi1),                I1, I2, T.get_color() ), DrawSide );
+            return false;
+         }
+         else
+            throw new Exception("Unknown error.");
+     
+         //funkcija vraca true ako se moze nastaviti sa crtanjem trougla
+         return true;
+      }
+
+
+
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
       private void RasterizeTriangle(Graphics g, Triangle Tpp, Triangle T, Color c)
       {
          //indeks gornjeg temena U trougla (sa najvecim Y)
@@ -389,140 +525,7 @@ namespace Graphics3D
       }
 
 
-
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
-      private void ClipLine(ref Vector3D v0, ref Vector3D v1)
-      {
-         double clip_wid = 2;
-         double clip_hei = 2;
-         double clip_dep = 1;
-
-
-         const int reg_n = 2 << 5;   //near   regional code
-         const int reg_f = 2 << 4;   //far        -||-
-         const int reg_t = 2 << 3;   //top        -||-
-         const int reg_b = 2 << 2;   //bottom     -||-
-         const int reg_l = 2 << 1;   //left       -||-
-         const int reg_r = 2 << 0;   //right      -||-
-
-
-
-         Vector3D[] v = new Vector3D[2];
-         int[] v_reg = new int[2];   //vectors' regional code
-
-         v[0] = v0;
-         v[1] = v1;
-
-         
-         for( int i = 0; i < 2; i++ )   //setting regional codes
-         {
-            v_reg[i] = 0;
-
-            v_reg[i] &= (v[i].getz() > clip_dep  ) ? reg_n : (v[i].getz() < 0         ) ? reg_f : ~0;
-            v_reg[i] &= (v[i].gety() > clip_hei/2) ? reg_t : (v[i].getx() < clip_hei/2) ? reg_b : ~0;
-            v_reg[i] &= (v[i].getx() > clip_wid/2) ? reg_r : (v[i].getx() < clip_wid/2) ? reg_l : ~0;
-         }
-
-         
-         if( (v_reg[0] & v_reg[1]) == 0 ) return;   //apparently & doesn't take prescedence over ==
-         
-
-         for( int i = 0; i < 2; i++ )
-         {
-            if     ( (v_reg[i] & reg_n) != 0 )
-            {
-               
-            }
-            else if( (v_reg[i] & reg_f) != 0 ) { }
-            else if( (v_reg[i] & reg_l) != 0 ) { }
-            else if( (v_reg[i] & reg_r) != 0 ) { }
-            else if( (v_reg[i] & reg_t) != 0 ) { }
-            else if( (v_reg[i] & reg_b) != 0 ) { }
-         }
-
-      }
-
-
-
-      private bool ClipTriangle(Graphics g, ref Triangle T, Vector4D N, Vector4D L, int DrawSide)
-      {  
-         //CP je clipping plane
-         //N je normala na CP usmerena ka njegovoj spoljasnosti (tj. delu koji se odbacuje)
-         //L je tacka koja pripada CP
-         //trougao T dat u koordinatnom sistemu posmatraca, ali na njega nije primenjena projekcija perspektive
-
-         //ispitivanje da li treba raditi clipping
-         // s0, s1 i s2 su pozitivni ako je tacka sa spoljne strane CP
-         int s0 = Math.Sign(Math.Round( N * (T.getv(0) - L), Cmath.hip )); 
-         int s1 = Math.Sign(Math.Round( N * (T.getv(1) - L), Cmath.hip )); 
-         int s2 = Math.Sign(Math.Round( N * (T.getv(2) - L), Cmath.hip ));
-         int s  = s0+s1+s2;  
-         int a  = Math.Abs(s0) + Math.Abs(s1) + Math.Abs(s2); 
-   
-         if(     s == 3               //ako su sva tri temena trougla spolja
-             ||  s == 2               //ako su dva temena trougla spolja, a trece teme lezi u CP
-             || (s == 1 && a == 1 ))  //ako je jedno teme spolja, a druga dva leze u CP
-         {
-            return false;  //ne treba crtati trougao koji je ispred CP u odnosu na posmatraca
-         }
-         else if(     s == -3               //ako su sva tri temena trougla unutra
-                  ||  s == -2               //ako su dva temena trougla unutra, a trece teme lezi u CP
-                  || (s == -1 && a == 1 )   //ako je jedno teme unutra, a druga dva leze u CP
-                  || (s ==  0 && a == 0 ))  //ako su sva tri temena trougla u CP
-         {
-            //preskociti CP clipping trougla koji je ceo iza CP u odnosu na posmatraca
-         }
-         else if( s == 0 && a == 2 )
-         {
-            //smanjiti trougao (odbacivanjem spoljasnjeg dela) koji je presecen CP-om tako da mu je jedno teme unutra, drugo spolja a trece lezi u CP
-            int idxcp  = (s1 ==  0 ? 1 : (s2 ==  0 ? 2 : 0));
-            int idxo   = (s1 ==  1 ? 1 : (s2 ==  1 ? 2 : 0));
-            int idxi   = (s1 == -1 ? 1 : (s2 == -1 ? 2 : 0));
-
-            Vector4D I1 = Intersect( T.getv(idxi), T.getv(idxo), N, L );
-
-            T.setv( idxo, I1 );  //spoljasnje teme ce biti zamenjeno tackom proboja te duzi kroz CP)
-
-          //pen.Color = Color.LightGreen;
-         }
-         else if( s ==  1 && a == 3 )
-         {
-            //smanjiti trougao (odbacivanjem spoljasneg dela) koji je presecen CP-om tako da mu je jedno teme unutra a dva spolja
-            int idxi  = (s1 == -1 ? 1 : (s2 == -1 ? 2 : 0));
-            int idxo1 = (idxi + 1) % 3;
-            int idxo2 = (idxi + 2) % 3;
-
-            Vector4D I1 = Intersect( T.getv(idxi), T.getv(idxo1), N, L );
-            Vector4D I2 = Intersect( T.getv(idxi), T.getv(idxo2), N, L );
-
-            T.setv( idxo1, I1 );  //prvo spoljasnje teme ce biti zamenjeno tackom proboja te duzi kroz CP)
-            T.setv( idxo2, I2 );  //drugo spoljasnje teme ce biti zamenjeno tackom proboja te duzi kroz CP)
-
-         //pen.Color = Color.LightBlue;
-         }
-         else if( s == -1 && a == 3 )
-         {
-            //raseci na dva dela trougao koji je presecen CP-om tako da mu je jedno teme spolja a dva unutra
-            int idxo  = (s1 == 1 ? 1 : (s2 == 1 ? 2 : 0));
-            int idxi1 = (idxo + 1) % 3;
-            int idxi2 = (idxo + 2) % 3;
-
-            Vector4D I1 = Intersect( T.getv(idxi2), T.getv(idxo), N, L );
-            Vector4D I2 = Intersect( T.getv(idxi1), T.getv(idxo), N, L );
-
-            DrawTriangle( g, new Triangle( T.getv(idxi1), T.getv(idxi2), I1,     T.get_color() ), DrawSide );
-            DrawTriangle( g, new Triangle( T.getv(idxi1),                I1, I2, T.get_color() ), DrawSide );
-            return false;
-         }
-         else
-            throw new Exception("Unknown error.");
-     
-         //funkcija vraca true ako se moze nastaviti sa crtanjem trougla
-         return true;
-      }
-
-
-
       private void DrawTriangle(Graphics g, Triangle T, int DrawSide = 0)
       {
          //trougao T dat u koordinatnom sistemu posmatraca, ali na njega nije primenjena projekcija perspektive
@@ -623,7 +626,6 @@ namespace Graphics3D
 
       }
 
-
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       private void DrawMesh(Graphics g, Mesh S, Matrix4D M = null )
       {
@@ -646,6 +648,7 @@ namespace Graphics3D
                DrawTriangle( g, M * triangles[i], front_side );  //applies shape transformations to each triangle of the specific shape, and draw only front-side triangles
          }         
       }
+
 
 
       private void UpdateModels()
@@ -702,8 +705,6 @@ namespace Graphics3D
          UpdatePositions();
       }
 
-
-
       private void UpdatePositions()
       {
          switch( scene_num )
@@ -743,7 +744,7 @@ namespace Graphics3D
                break;
 
             case 4:
-               for( int i = 0; i < scene.Count; i++ )                               // rotacija oko Sunca                                                      udaljenost od Sunca                                                                            nagib sopstvene ose rotacije na ekliptiku      rotacija oko sopstvene ose                  
+               for( int i = 0; i < scene.Count; i++ )                               //rotacija oko Sunca                                                      udaljenost od Sunca                                                                            nagib sopstvene ose rotacije na ekliptiku      rotacija oko sopstvene ose                  
                   if(      scene[i].name == "Sunce"               ) scene[i].transf = Matrix4D.rotate( 0,                0      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   0 :  0.00) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(    7.25/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/  25.38, 0 );
                   else if( scene[i].name == "Merkur"              ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/  0.241      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   1 :  0.38) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(    0.00/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/  58.64, 0 );
                   else if( scene[i].name == "Venera"              ) scene[i].transf = Matrix4D.rotate( 0, Tsim_orb/  0.615      * FaktorOrbitalnogUbrzanja, 0 ) * Matrix4D.transl( 0, 0, (EkvidistantneOrbitale ?   2 :  0.72) * SimulPoluprecnikOrbiteZemlje ) * Matrix4D.rotate(  177.30/180*Math.PI, 0, 0 ) * Matrix4D.rotate( 0, 365.5*Tsim/2/Math.PI/-243.02, 0 );
@@ -771,13 +772,11 @@ namespace Graphics3D
          if( crate_new_bitmap == true )
          {
             bitmap?.Dispose();
-            //h_bitmap?.Dispose();
 
             draw_wid = (int) ClientRectangle.Width;
             draw_hei = (int) ClientRectangle.Height;
 
             bitmap   = new Bitmap(draw_wid, draw_hei);
-            //h_bitmap = new Bitmap(draw_wid, draw_hei);
 
             //priprema Z-buffera
             zbuf = new double[draw_hei][];
@@ -806,7 +805,7 @@ namespace Graphics3D
          if(    background_mode == background_grid
              || background_mode == background_all )
          {
-            //Iscrtavanje koordinatnog sistema viewporta
+            //iscrtavanje koordinatnog sistema viewporta
 
             g.DrawLine(AxisPen, -draw_wid/2, 0, draw_wid/2, 0);   //X-osa
             int m10  = 1;
@@ -915,7 +914,7 @@ namespace Graphics3D
             if( Orbiting )
                Tsim_orb += Tsim_inc;
             UpdatePositions();
-            Console.WriteLine("time increased" );
+            Console.WriteLine("Time increased" );
             Refresh();
          }
       }
@@ -951,7 +950,7 @@ namespace Graphics3D
                           else if( ModifierKeys == Keys.None    )  {   vt = Matrix4D.rotateX( 0.03)      * vt;    Console.WriteLine("Camera oriented downward" );         Refresh();   }   break;
 
             //pomeranje near clipping plane-a
-            case Keys.Multiply:   if( Zncp > -400 ) {   Zncp -= 2;   Console.WriteLine("Near Clipping Plane moved forward to Zncp={0}", Zncp );    Refresh();   }   break;
+            case Keys.Multiply:   if( Zncp > -400 ) {   Zncp -= 2;   Console.WriteLine("Near Clipping Plane moved forward  to Zncp={0}", Zncp );   Refresh();   }   break;
             case Keys.Divide:     if( Zncp <= -4 )  {   Zncp += 2;   Console.WriteLine("Near Clipping Plane moved backward to Zncp={0}", Zncp );   Refresh();   }   break;
 
             //promena scene
@@ -969,13 +968,13 @@ namespace Graphics3D
             case Keys.T:    time_mode = (time_mode + 1) % time_mode_cnt;                                   Console.WriteLine("Time mode {0}", time_mode );                           Refresh();   break;
             case Keys.D:    depth_mode = (depth_mode + 1) % depth_mode_cnt;                                Console.WriteLine("Depth mode {0}", depth_mode );                         Refresh();   break;
             case Keys.W:    wireframe_mode = (wireframe_mode + 1) % wireframe_mode_cnt;                    Console.WriteLine("Wireframe mode {0}", wireframe_mode );                 Refresh();   break;
-            case Keys.S:    surface_mode = (surface_mode + 1) % surface_mode_cnt;                          Console.WriteLine("surface mode {0}", surface_mode );                     Refresh();   break;
-            case Keys.H:    shading_mode = (shading_mode + 1) % shading_mode_cnt;                          Console.WriteLine("shading mode {0}", shading_mode );                     Refresh();   break;
-            case Keys.N:    draw_normals = ! draw_normals;                                                 Console.WriteLine("draw normals {0}", draw_normals );                     Refresh();   break;
-            case Keys.B:    background_mode = (background_mode + 1) % background_mode_cnt;                 Console.WriteLine("background_mdoe {0}", background_mode );               Refresh();   break;
-            case Keys.E:    EkvidistantneOrbitale = ! EkvidistantneOrbitale;               UpdateModels(); Console.WriteLine("equidistant orbitals {0}", EkvidistantneOrbitale );    Refresh();   break;
-            case Keys.R:    Resized = ! Resized;                                           UpdateModels(); Console.WriteLine("resized {0}", Resized );                               Refresh();   break;
-            case Keys.O:    Orbiting = ! Orbiting;                                                         Console.WriteLine("orbiting {0}", Orbiting );                             Refresh();   break;
+            case Keys.S:    surface_mode = (surface_mode + 1) % surface_mode_cnt;                          Console.WriteLine("Surface mode {0}", surface_mode );                     Refresh();   break;
+            case Keys.H:    shading_mode = (shading_mode + 1) % shading_mode_cnt;                          Console.WriteLine("Shading mode {0}", shading_mode );                     Refresh();   break;
+            case Keys.N:    draw_normals = ! draw_normals;                                                 Console.WriteLine("Draw normals {0}", draw_normals );                     Refresh();   break;
+            case Keys.B:    background_mode = (background_mode + 1) % background_mode_cnt;                 Console.WriteLine("Background mode {0}", background_mode );               Refresh();   break;
+            case Keys.E:    EkvidistantneOrbitale = ! EkvidistantneOrbitale;               UpdateModels(); Console.WriteLine("Equidistant orbitals {0}", EkvidistantneOrbitale );    Refresh();   break;
+            case Keys.R:    Resized = ! Resized;                                           UpdateModels(); Console.WriteLine("Resized {0}", Resized );                               Refresh();   break;
+            case Keys.O:    Orbiting = ! Orbiting;                                                         Console.WriteLine("Orbiting {0}", Orbiting );                             Refresh();   break;
          }
       }
 
