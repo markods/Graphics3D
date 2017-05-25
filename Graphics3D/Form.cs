@@ -55,13 +55,13 @@ namespace Graphics3D
       private int draw_wid, draw_hei;   //prostor u PictureBox-u za crtanje
       List<Mesh> scene;                 //skup svih mesh-ova na sceni
 
-      double Zvp;    //Z koordinata VP  (viewporta) u koordinatnom sistemu posmatraca
-      double Zncp;   //Z koordinata NCP (near clipping plane) u koordinatnom sistemu posmatraca
-      double Zfcp;   //Z koordinata FCP (far clipping plane) u koordinatnom sistemu posmatraca
-      double Xrcp;   //X koordinata RCP (right clipping plane) u koordinatnom sistemu posmatraca
-      double Xlcp;   //X koordinata LCP (left clipping plane) u koordinatnom sistemu posmatraca
-      double Ytcp;   //Y koordinata TCP (top clipping plane) u koordinatnom sistemu posmatraca
-      double Ybcp;   //Y koordinata BCP (bottom clipping plane) u koordinatnom sistemu posmatraca
+      double Zvp;    //Z koordinata VP  (      viewporta     ) u koordinatnom sistemu posmatraca
+      double Zncp;   //Z koordinata NCP (near  clipping plane)                -||-
+      double Zfcp;   //Z koordinata FCP (far       -||-      )                -||-
+      double Xrcp;   //X koordinata RCP (right     -||-      )                -||-
+      double Xlcp;   //X koordinata LCP (left      -||-      )                -||-
+      double Ytcp;   //Y koordinata TCP (top       -||-      )                -||-
+      double Ybcp;   //Y koordinata BCP (bottom    -||-      )                -||-
       Matrix4D pp;   //perspective projection matrix
       Matrix4D vt;   //viewport transformation matrix
 
@@ -246,14 +246,12 @@ namespace Graphics3D
          if( (v2 - v1)*N == 0 )
             return (v1 + v2) / 2;  //forensic?
 
-         //returns intersection point of line (between v1 and V2) through plane (N = normal to plane, L = point which belongs to plane)
+         //returns intersection point of line (between v1 and v2) through plane (N = normal to plane, L = point which belongs to plane)
          return v1 + ((L - v1)*N) / ((v2 - v1)*N) * (v2 - v1);
       }
 
 
-
-
-
+      
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       private void ClipLine(ref Vector3D v0, ref Vector3D v1)
       {
@@ -387,7 +385,7 @@ namespace Graphics3D
       }
 
 
-
+            
       [MethodImpl(MethodImplOptions.AggressiveInlining)]
       private void RasterizeTriangle(Graphics g, Triangle Tpp, Triangle T, Color c)
       {
@@ -902,7 +900,7 @@ namespace Graphics3D
          Console.WriteLine(refresh_cnt++);
       }
 
-      private void timer_draw_Tick(object sender, EventArgs e)
+      private void Timer_Draw_Tick(object sender, EventArgs e)
       {
          //Invalidate();
          if( time_mode == time_auto )
