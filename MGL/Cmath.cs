@@ -132,6 +132,15 @@ namespace MGL
          
          return x - Math.Round(x/len)*len;
       }
+      
+      //funkcija koja ogranicava double argument na navedeni zatvoren interval;
+      //ako se argument nalazi izvan intervala onda ga lepi za blizu ivicu intervala
+      public static double interv_conf(double x, double l, double r)
+      {
+         if     (x < l) return l;
+         else if(x > r) return r;
+         else           return x;
+      }
       #endregion
 
 
@@ -471,6 +480,19 @@ namespace MGL
          Console.WriteLine("frac_part ({0}, {1}) = {2,3:G8}", a, base2, Cmath.frac_part (a, base2));
          Console.WriteLine("whole_part({0}, {1}) = {2,3:G8}", b, base2, Cmath.whole_part(b, base2));
          Console.WriteLine("frac_part ({0}, {1}) = {2,3:G8}", b, base2, Cmath.frac_part (b, base2));
+
+
+
+
+
+         Console.WriteLine();
+         Console.WriteLine("-----------------");
+
+         double l = -14;
+         double r =  13;
+
+         Console.WriteLine("interv_conf({0}, {1}, {2}) = {3,3:G8}", a, l, r, Cmath.interv_conf(a, l, r));
+         Console.WriteLine("interv_conf({0}, {1}, {2}) = {3,3:G8}", b, l, r, Cmath.interv_conf(b, l, r));
 
       }
 

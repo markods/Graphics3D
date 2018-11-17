@@ -231,12 +231,14 @@ namespace Graphics3D
 
       Color Brighten(Color c1, double factor)
       {
+         if( factor < 0 )
+            throw new ArgumentException("Cannot brighten negative times");
+         
          double r = ((c1.R * factor) > 255) ? 255 : (c1.R * factor);
          double g = ((c1.G * factor) > 255) ? 255 : (c1.G * factor);
          double b = ((c1.B * factor) > 255) ? 255 : (c1.B * factor);
 
-         Color c = Color.FromArgb( c1.A, (int) r, (int) g, (int) b );
-         return c;
+         return Color.FromArgb( c1.A, (int) r, (int) g, (int) b );
       }
 
 
@@ -531,7 +533,7 @@ namespace Graphics3D
          //strana na koju je orijentisan trougao u odnosu na posmatraca (side = -1 ako posmatrac vidi spoljnu stranu trougla, side = 1 ako posmatrac vidi unutrasnju stranu trougla, side = 0 ako ne vidi ni jednu)
          double side = Math.Sign( T.center() * Vector4D.vect_mult( T.getv(1) - T.getv(0), T.getv(2) - T.getv(0) ) );
 
-         //ne iscrtava se trougao sa zadnje strane objekta (trougao koji je orijetisan na istu stranu na koju gleda posmatrac)
+         //ne iscrtava se trougao sa zadnje strane objekta (trougao koji je orijentisan na istu stranu na koju gleda posmatrac)
          if( side * DrawSide > 0 )
             return;
 
@@ -764,37 +766,9 @@ namespace Graphics3D
 
 
 
-      private void PictureBox_Paint(object sender, PaintEventArgs e)
+      [MethodImpl(MethodImplOptions.AggressiveInlining)]
+      private void DrawBackground(Graphics g)
       {
-         //inicijalizacija grafickog bafera (koji se koristi za double-buffering)
-         if( crate_new_bitmap == true )
-         {
-            bitmap?.Dispose();
-
-            draw_wid = (int) ClientRectangle.Width;
-            draw_hei = (int) ClientRectangle.Height;
-
-            bitmap   = new Bitmap(draw_wid, draw_hei);
-
-            //priprema Z-buffera
-            zbuf = new double[draw_hei][];
-            for( int i = 0; i < draw_hei; i++ )
-               zbuf[i] = new double[draw_wid];
-         }
-
-         //praznjenje Z buffera
-         if( depth_mode == depth_zbuf )         
-            for( int y = 0; y < draw_hei; y++ )
-               for(int x = 0; x < draw_wid; x++ )
-                  zbuf[y][x] = -100000000;
-
-
-
-         Graphics g = Graphics.FromImage(bitmap);
-         g.TranslateTransform( draw_wid/2, draw_hei/2 );  //postavlja koordinatni pocetak PictureBox-a u njegov centar
-         g.ScaleTransform( 1, -1 );                       //menja smer y ose tako da y koordinate rastu navise (po defaultu rastu nanize)
-
-
          Pen AxisPen    = new Pen(Color.Gray,      1);
          Pen Grid10Pen  = new Pen(Color.White,     1);
          Pen Grid100Pen = new Pen(Color.LightGray, 1);
@@ -804,7 +778,6 @@ namespace Graphics3D
              || background_mode == background_all )
          {
             //iscrtavanje koordinatnog sistema viewporta
-
             g.DrawLine(AxisPen, -draw_wid/2, 0, draw_wid/2, 0);   //X-osa
             int m10  = 1;
             int m100 = 3;
@@ -823,11 +796,11 @@ namespace Graphics3D
             }
          }
 
+
          //iscrtavanje background linija
          if(    background_mode == background_lines
              || background_mode == background_all )
          {
-
             //"tunel"
             for( int t = -400; t <= -50; t += 50 )
             {
@@ -841,7 +814,6 @@ namespace Graphics3D
                g.DrawLine( pen, (float) br.getnormx(), (float) br.getnormy(), (float) bl.getnormx(), (float) bl.getnormy() );
                g.DrawLine( pen, (float) bl.getnormx(), (float) bl.getnormy(), (float) tl.getnormx(), (float) tl.getnormy() );
             }
-
 
             //pravougaonik koji lezi u FCP
             pen.Color = Color.Red;
@@ -870,7 +842,42 @@ namespace Graphics3D
             g.DrawLine( pen, (float) Fbr.getnormx(), (float) Fbr.getnormy(), (float) Nbr.getnormx(), (float) Nbr.getnormy() );
             g.DrawLine( pen, (float) Fbl.getnormx(), (float) Fbl.getnormy(), (float) Nbl.getnormx(), (float) Nbl.getnormy() );
          }
-      
+      }
+
+
+      private void PictureBox_Paint(object sender, PaintEventArgs e)
+      {
+         //inicijalizacija grafickog bafera (koji se koristi za double-buffering)
+         if( crate_new_bitmap == true )
+         {
+            bitmap?.Dispose();
+
+            draw_wid = (int) ClientRectangle.Width;
+            draw_hei = (int) ClientRectangle.Height;
+
+            bitmap   = new Bitmap(draw_wid, draw_hei);
+
+            //priprema Z-buffera
+            zbuf = new double[draw_hei][];
+            for( int i = 0; i < draw_hei; i++ )
+               zbuf[i] = new double[draw_wid];
+         }
+
+         //praznjenje Z buffera
+         if( depth_mode == depth_zbuf )
+            for( int y = 0; y < draw_hei; y++ )
+               for(int x = 0; x < draw_wid; x++ )
+                  zbuf[y][x] = -100000000;
+
+
+
+         Graphics g = Graphics.FromImage(bitmap);
+         g.TranslateTransform( draw_wid/2, draw_hei/2 );  //postavlja koordinatni pocetak PictureBox-a u njegov centar
+         g.ScaleTransform( 1, -1 );                       //menja smer y ose tako da y koordinate rastu navise (po defaultu rastu nanize)
+
+
+         //iscrtavanje pozadine
+         DrawBackground( g );
 
          //iscrtavanje mesh-ova
          for( int i = 0; i < scene.Count; i++ )
