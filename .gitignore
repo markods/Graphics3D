@@ -1,11 +1,6 @@
----/
-
-Graphics3D/.vs/
-Graphics3D/bin/
-Graphics3D/obj/
-
-MGL/.vs/
-MGL/bin/
-MGL/obj/
+/**/.vs/
+/**/bin/
+/**/obj/
+/π README.txt
 
 
